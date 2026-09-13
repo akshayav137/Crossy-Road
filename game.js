@@ -35,109 +35,166 @@ const player = {
 
 
 // ======================================================
-// WORLD
+// WORLD OBJECTS
 // ======================================================
 
 const rows = new Map();
 
 const cars = [];
-const boats = [];
+const logs = [];
 const trainTracks = [];
+const airfields = [];
+const airplanes = [];
 
 
 // ======================================================
 // 2.5D PERSPECTIVE
 // ======================================================
 
-// Objects near the top look smaller.
-// Objects near the bottom look larger.
-
 function getScale(screenY) {
-  let amount = screenY / canvas.height;
 
-  if (amount < 0) {
-    amount = 0;
-  }
+  let amount =
+    screenY / canvas.height;
 
-  if (amount > 1) {
-    amount = 1;
-  }
+  amount =
+    Math.max(
+      0,
+      Math.min(
+        1,
+        amount
+      )
+    );
 
   return 0.68 + amount * 0.32;
 }
 
 
 function projectX(worldX, screenY) {
-  const scale = getScale(screenY);
+
+  const scale =
+    getScale(screenY);
 
   return (
     canvas.width / 2 +
-    (worldX - canvas.width / 2) * scale
+    (
+      worldX -
+      canvas.width / 2
+    ) *
+    scale
   );
-}
-
-
-function projectWidth(width, screenY) {
-  return width * getScale(screenY);
-}
-
-
-// Draw one perspective ground strip
-function drawPerspectiveBand(y, height, color) {
-  const center = canvas.width / 2;
-
-  const topScale = getScale(y);
-  const bottomScale = getScale(y + height);
-
-  const topHalf =
-    (canvas.width / 2) * topScale;
-
-  const bottomHalf =
-    (canvas.width / 2) * bottomScale;
-
-
-  ctx.beginPath();
-
-  ctx.moveTo(
-    center - topHalf,
-    y
-  );
-
-  ctx.lineTo(
-    center + topHalf,
-    y
-  );
-
-  ctx.lineTo(
-    center + bottomHalf,
-    y + height
-  );
-
-  ctx.lineTo(
-    center - bottomHalf,
-    y + height
-  );
-
-  ctx.closePath();
-
-  ctx.fillStyle = color;
-  ctx.fill();
 }
 
 
 // ======================================================
-// VEHICLES
+// COLOR HELPERS
 // ======================================================
 
-function createCarsForRow(row, direction, speed) {
-  const vehicleTypes = [
+function adjustColor(color, amount) {
+
+  let value =
+    color.replace("#", "");
+
+  if (value.length === 3) {
+
+    value =
+      value
+        .split("")
+        .map(
+          c => c + c
+        )
+        .join("");
+  }
+
+
+  let number =
+    parseInt(
+      value,
+      16
+    );
+
+
+  let r =
+    (number >> 16) +
+    amount;
+
+  let g =
+    (
+      (
+        number >> 8
+      ) &
+      255
+    ) +
+    amount;
+
+  let b =
+    (
+      number &
+      255
+    ) +
+    amount;
+
+
+  r =
+    Math.max(
+      0,
+      Math.min(
+        255,
+        r
+      )
+    );
+
+  g =
+    Math.max(
+      0,
+      Math.min(
+        255,
+        g
+      )
+    );
+
+  b =
+    Math.max(
+      0,
+      Math.min(
+        255,
+        b
+      )
+    );
+
+
+  return (
+    "#" +
+    (
+      (1 << 24) +
+      (r << 16) +
+      (g << 8) +
+      b
+    )
+      .toString(16)
+      .slice(1)
+  );
+}
+
+
+// ======================================================
+// CREATE VEHICLES
+// ======================================================
+
+function createCarsForRow(
+  row,
+  direction,
+  speed
+) {
+
+  const types = [
     "car",
     "truck",
     "taxi",
     "van"
   ];
 
-  const vehicleColors = [
+
+  const colors = [
     "#e53935",
     "#1e88e5",
     "#fdd835",
@@ -148,97 +205,114 @@ function createCarsForRow(row, direction, speed) {
 
 
   function makeVehicle(x) {
+
     const type =
-      vehicleTypes[
+      types[
         Math.floor(
-          Math.random() * vehicleTypes.length
+          Math.random() *
+          types.length
         )
       ];
 
 
     const color =
-      vehicleColors[
+      colors[
         Math.floor(
-          Math.random() * vehicleColors.length
+          Math.random() *
+          colors.length
         )
       ];
 
 
     let width = 80;
 
-    if (type === "truck") {
+    if (
+      type === "truck"
+    ) {
       width = 110;
     }
 
-    if (type === "van") {
+    if (
+      type === "van"
+    ) {
       width = 95;
     }
 
 
     cars.push({
-      row: row,
-      x: x,
-      width: width,
+      row,
+      x,
+      width,
       height: 35,
-      speed: speed,
-      direction: direction,
-      type: type,
-      color: color
+      direction,
+      speed,
+      type,
+      color
     });
   }
 
 
-  if (direction === 1) {
+  if (
+    direction === 1
+  ) {
+
     makeVehicle(-120);
-    makeVehicle(230);
+    makeVehicle(240);
+
   } else {
+
     makeVehicle(650);
-    makeVehicle(320);
+    makeVehicle(310);
   }
 }
 
 
 // ======================================================
-// BOATS
+// CREATE LOGS
 // ======================================================
 
-function createBoatsForRow(row, direction, speed) {
+function createLogsForRow(
+  row,
+  direction,
+  speed
+) {
+
   const positions =
     direction === 1
-      ? [-120, 220, 520]
-      : [650, 320, 20];
+      ? [-150, 180, 500]
+      : [650, 330, 20];
 
 
-  for (let position of positions) {
-    boats.push({
-      row: row,
-      x: position,
-      width: 120,
-      height: 38,
-      speed: speed,
-      direction: direction
+  for (
+    let x of positions
+  ) {
+
+    logs.push({
+      row,
+      x,
+      width: 145,
+      height: 35,
+      direction,
+      speed
     });
   }
 }
 
 
 // ======================================================
-// TRAIN TRACKS
+// CREATE TRAIN TRACK
 // ======================================================
 
 function createTrainTrack(row) {
-  const direction =
-    Math.random() < 0.5
-      ? 1
-      : -1;
-
 
   trainTracks.push({
-    row: row,
-    direction: direction,
 
-    width: 900,
-    height: 42,
+    row,
+
+    direction:
+      Math.random() < 0.5
+        ? 1
+        : -1,
 
     cycleLength: 9000,
 
@@ -247,7 +321,8 @@ function createTrainTrack(row) {
     trainTime: 2600,
 
     timeOffset:
-      Math.random() * 5000,
+      Math.random() *
+      5000,
 
     bellPlayed: false
   });
@@ -261,6 +336,123 @@ function createTrainTrack(row) {
 
 
 // ======================================================
+// CREATE AIRFIELD
+// ======================================================
+
+function createAirfield(
+  bottomRow,
+  length,
+  difficulty
+) {
+
+  const topRow =
+    bottomRow -
+    length +
+    1;
+
+
+  for (
+    let row = bottomRow;
+    row >= topRow;
+    row--
+  ) {
+
+    rows.set(
+      row,
+      "airfield"
+    );
+  }
+
+
+  // Fence goes AFTER the field
+  const fenceRow =
+    topRow - 1;
+
+
+  rows.set(
+    fenceRow,
+    "fence"
+  );
+
+
+  // Safe grass after fence
+  rows.set(
+    fenceRow - 1,
+    "grass"
+  );
+
+
+  const field = {
+
+    bottomRow,
+    topRow,
+    fenceRow,
+    difficulty
+  };
+
+
+  airfields.push(field);
+
+
+  // First field = manageable
+  // Later fields = more planes
+  const planeCount =
+    difficulty === 1
+      ? 2
+      : Math.min(
+          2 + difficulty,
+          6
+        );
+
+
+  for (
+    let i = 0;
+    i < planeCount;
+    i++
+  ) {
+
+    const spacing =
+      canvas.width /
+      planeCount;
+
+
+    airplanes.push({
+
+      field,
+
+      x:
+        30 +
+        i *
+        spacing +
+        Math.random() *
+        50,
+
+      worldY:
+        topRow *
+        tileSize -
+        i *
+        100,
+
+      width: 70,
+
+      height: 48,
+
+      speed:
+        0.8 +
+        difficulty *
+        0.22 +
+        Math.random() *
+        0.22
+
+    });
+  }
+
+
+  return fenceRow - 1;
+}
+
+
+// ======================================================
 // STARTING WORLD
 // ======================================================
 
@@ -268,142 +460,240 @@ rows.set(11, "grass");
 rows.set(10, "grass");
 
 
-// First 2-lane road
-rows.set(9, "road");
-rows.set(8, "road");
+// ------------------------------------------------------
+// ONE ROAD LANE
+// ------------------------------------------------------
 
-createCarsForRow(9, 1, 3);
-createCarsForRow(8, -1, 4);
-
-
-// Grass
-rows.set(7, "grass");
-
-
-// Single road
-rows.set(6, "road");
-
-createCarsForRow(6, 1, 4);
-
-
-// Grass
-rows.set(5, "grass");
-
-
-// Two roads
-rows.set(4, "road");
-rows.set(3, "road");
-
-createCarsForRow(4, -1, 3.5);
-createCarsForRow(3, 1, 4.5);
-
-
-// Grass
-rows.set(2, "grass");
-
-
-// More roads
-rows.set(1, "road");
-rows.set(0, "road");
-
-createCarsForRow(1, 1, 3.5);
-createCarsForRow(0, -1, 4);
-
-
-// Grass
-rows.set(-1, "grass");
-
-
-// River
-rows.set(-2, "water");
-rows.set(-3, "water");
-
-createBoatsForRow(-2, 1, 2);
-createBoatsForRow(-3, -1, 2.5);
-
-
-// Grass
-rows.set(-4, "grass");
-
-
-// More roads
-rows.set(-5, "road");
-
-createCarsForRow(
-  -5,
-  1,
-  3.5
-);
-
-
-rows.set(-6, "grass");
-
-
-rows.set(-7, "road");
-rows.set(-8, "road");
-
-createCarsForRow(
-  -7,
-  -1,
-  4
+rows.set(
+  9,
+  "road"
 );
 
 createCarsForRow(
-  -8,
+  9,
   1,
   3
 );
 
 
-rows.set(-9, "grass");
+// Safe grass
+rows.set(
+  8,
+  "grass"
+);
 
 
-// Train
-createTrainTrack(-10);
+// ------------------------------------------------------
+// TWO ROAD LANES
+// ------------------------------------------------------
+
+rows.set(
+  7,
+  "road"
+);
+
+rows.set(
+  6,
+  "road"
+);
 
 
-// Grass
-rows.set(-11, "grass");
-
-
-// Second river
-rows.set(-12, "water");
-rows.set(-13, "water");
-
-createBoatsForRow(
-  -12,
+createCarsForRow(
+  7,
   -1,
-  2.2
+  3.4
 );
 
-createBoatsForRow(
-  -13,
+createCarsForRow(
+  6,
   1,
-  2.8
+  3
 );
 
 
-rows.set(-14, "grass");
+// Safe grass
+rows.set(
+  5,
+  "grass"
+);
 
 
-let nextRowToGenerate = -15;
+// ------------------------------------------------------
+// FIRST RIVER
+// ------------------------------------------------------
+
+rows.set(
+  4,
+  "water"
+);
+
+rows.set(
+  3,
+  "water"
+);
+
+
+createLogsForRow(
+  4,
+  1,
+  1.8
+);
+
+createLogsForRow(
+  3,
+  -1,
+  2
+);
+
+
+// Safe grass
+rows.set(
+  2,
+  "grass"
+);
+
+
+// ------------------------------------------------------
+// TWO ROAD LANES
+// ------------------------------------------------------
+
+rows.set(
+  1,
+  "road"
+);
+
+rows.set(
+  0,
+  "road"
+);
+
+
+createCarsForRow(
+  1,
+  1,
+  3.2
+);
+
+createCarsForRow(
+  0,
+  -1,
+  3.6
+);
+
+
+// Safe grass
+rows.set(
+  -1,
+  "grass"
+);
+
+
+// ------------------------------------------------------
+// ONE ROAD LANE
+// ------------------------------------------------------
+
+rows.set(
+  -2,
+  "road"
+);
+
+
+createCarsForRow(
+  -2,
+  1,
+  3.5
+);
+
+
+// Safe grass
+rows.set(
+  -3,
+  "grass"
+);
+
+
+// ------------------------------------------------------
+// FIRST AIRPLANE FIELD
+// ------------------------------------------------------
+
+const firstFieldEnd =
+  createAirfield(
+    -4,
+    5,
+    1
+  );
+
+
+// firstFieldEnd is the safe grass after fence
+let nextRowToGenerate =
+  firstFieldEnd - 1;
+
+
+// ======================================================
+// GENERATION VARIABLES
+// ======================================================
 
 let roadLanesSinceRiver = 0;
 
+let sectionsSinceAirfield = 0;
+
+let airplaneFieldDifficulty = 2;
+
 
 // ======================================================
-// ENDLESS WORLD
+// ENDLESS WORLD GENERATOR
 // ======================================================
 
-function generateMoreWorld(untilRow) {
+function generateMoreWorld(
+  untilRow
+) {
 
   while (
-    nextRowToGenerate >= untilRow
+    nextRowToGenerate >=
+    untilRow
   ) {
 
-    // ----------------------------
+    // --------------------------------------------------
+    // SECOND / FUTURE AIRPLANE FIELDS
+    // --------------------------------------------------
+
+    if (
+      sectionsSinceAirfield >= 6
+    ) {
+
+      rows.set(
+        nextRowToGenerate,
+        "grass"
+      );
+
+      nextRowToGenerate--;
+
+
+      const newSafeRow =
+        createAirfield(
+          nextRowToGenerate,
+          5,
+          airplaneFieldDifficulty
+        );
+
+
+      nextRowToGenerate =
+        newSafeRow - 1;
+
+
+      airplaneFieldDifficulty++;
+
+      sectionsSinceAirfield = 0;
+
+      roadLanesSinceRiver = 0;
+
+      continue;
+    }
+
+
+    // --------------------------------------------------
     // RIVER
-    // ----------------------------
+    // --------------------------------------------------
 
     if (
       roadLanesSinceRiver >= 5
@@ -422,10 +712,12 @@ function generateMoreWorld(untilRow) {
         "water"
       );
 
-      createBoatsForRow(
+      createLogsForRow(
         nextRowToGenerate,
         1,
-        2 + Math.random()
+        1.8 +
+        Math.random() *
+        0.5
       );
 
       nextRowToGenerate--;
@@ -436,10 +728,12 @@ function generateMoreWorld(untilRow) {
         "water"
       );
 
-      createBoatsForRow(
+      createLogsForRow(
         nextRowToGenerate,
         -1,
-        2 + Math.random()
+        1.8 +
+        Math.random() *
+        0.5
       );
 
       nextRowToGenerate--;
@@ -455,13 +749,15 @@ function generateMoreWorld(untilRow) {
 
       roadLanesSinceRiver = 0;
 
+      sectionsSinceAirfield++;
+
       continue;
     }
 
 
-    // ----------------------------
+    // --------------------------------------------------
     // TRAIN
-    // ----------------------------
+    // --------------------------------------------------
 
     if (
       Math.random() < 0.16
@@ -490,16 +786,18 @@ function generateMoreWorld(untilRow) {
       nextRowToGenerate--;
 
 
+      sectionsSinceAirfield++;
+
       continue;
     }
 
 
-    // ----------------------------
+    // --------------------------------------------------
     // ROAD
-    // ----------------------------
+    // --------------------------------------------------
 
     const roadLength =
-      Math.random() < 0.5
+      Math.random() < 0.55
         ? 1
         : 2;
 
@@ -522,15 +820,12 @@ function generateMoreWorld(untilRow) {
       );
 
 
-      const speed =
-        2.5 +
-        Math.random() * 2;
-
-
       createCarsForRow(
         nextRowToGenerate,
         direction,
-        speed
+        2.8 +
+        Math.random() *
+        1.5
       );
 
 
@@ -542,18 +837,22 @@ function generateMoreWorld(untilRow) {
     }
 
 
-    // Grass always after road
+    // Always safe grass
     rows.set(
       nextRowToGenerate,
       "grass"
     );
 
     nextRowToGenerate--;
+
+    sectionsSinceAirfield++;
   }
 }
 
 
-generateMoreWorld(-45);
+generateMoreWorld(
+  -55
+);
 
 
 // ======================================================
@@ -562,7 +861,9 @@ generateMoreWorld(-45);
 
 function drawBackground() {
 
-  ctx.fillStyle = "#8fcf55";
+  ctx.fillStyle =
+    "#8fcf55";
+
 
   ctx.fillRect(
     0,
@@ -572,19 +873,9 @@ function drawBackground() {
   );
 
 
-  // Draw far rows first
-  const orderedRows =
-    Array.from(
-      rows.entries()
-    ).sort(
-      (a, b) =>
-        a[0] - b[0]
-    );
-
-
   for (
     const [row, type]
-    of orderedRows
+    of rows
   ) {
 
     const y =
@@ -601,129 +892,210 @@ function drawBackground() {
     }
 
 
-    // ----------------------------
+    // --------------------------------------------------
     // GRASS
-    // ----------------------------
+    // --------------------------------------------------
 
     if (
       type === "grass"
     ) {
 
-      drawPerspectiveBand(
+      ctx.fillStyle =
+        "#7fc84a";
+
+
+      ctx.fillRect(
+        0,
         y,
-        tileSize,
-        "#7fc84a"
+        canvas.width,
+        tileSize
       );
 
 
-      // Grass highlight
-      drawPerspectiveBand(
+      ctx.fillStyle =
+        "#97db60";
+
+
+      ctx.fillRect(
+        0,
         y,
-        4,
-        "#97db60"
+        canvas.width,
+        4
       );
     }
 
 
-    // ----------------------------
+    // --------------------------------------------------
     // ROAD
-    // ----------------------------
+    // --------------------------------------------------
 
     if (
       type === "road"
     ) {
 
-      drawPerspectiveBand(
+      ctx.fillStyle =
+        "#474747";
+
+
+      ctx.fillRect(
+        0,
         y,
-        tileSize,
-        "#484848"
+        canvas.width,
+        tileSize
       );
 
 
-      // Road edge
-      drawPerspectiveBand(
+      ctx.fillStyle =
+        "#5e5e5e";
+
+
+      ctx.fillRect(
+        0,
         y,
-        3,
-        "#656565"
+        canvas.width,
+        3
       );
     }
 
 
-    // ----------------------------
+    // --------------------------------------------------
     // WATER
-    // ----------------------------
+    // --------------------------------------------------
 
     if (
       type === "water"
     ) {
 
-      drawPerspectiveBand(
+      ctx.fillStyle =
+        "#2499d8";
+
+
+      ctx.fillRect(
+        0,
         y,
-        tileSize,
-        "#2496d6"
+        canvas.width,
+        tileSize
       );
 
 
-      const scale =
-        getScale(
-          y + tileSize / 2
-        );
-
-
       ctx.strokeStyle =
-        "#78d2ef";
+        "#7bd6ef";
 
-      ctx.lineWidth =
-        2 * scale;
-
-
-      for (
-        let offset = 14;
-        offset <= 34;
-        offset += 20
-      ) {
-
-        const waterY =
-          y + offset;
+      ctx.lineWidth = 2;
 
 
-        const left =
-          projectX(
-            0,
-            waterY
-          );
+      ctx.beginPath();
 
-        const right =
-          projectX(
-            canvas.width,
-            waterY
-          );
+      ctx.moveTo(
+        0,
+        y + 15
+      );
+
+      ctx.lineTo(
+        canvas.width,
+        y + 15
+      );
+
+      ctx.stroke();
 
 
-        ctx.beginPath();
+      ctx.beginPath();
 
-        ctx.moveTo(
-          left,
-          waterY
-        );
+      ctx.moveTo(
+        0,
+        y + 35
+      );
 
-        ctx.lineTo(
-          right,
-          waterY
-        );
+      ctx.lineTo(
+        canvas.width,
+        y + 35
+      );
 
-        ctx.stroke();
-      }
+      ctx.stroke();
+    }
+
+
+    // --------------------------------------------------
+    // AIRPLANE FIELD
+    // --------------------------------------------------
+
+    if (
+      type === "airfield"
+    ) {
+
+      ctx.fillStyle =
+        "#62b447";
+
+
+      ctx.fillRect(
+        0,
+        y,
+        canvas.width,
+        tileSize
+      );
+
+
+      // mowing / runway-like stripes
+      ctx.fillStyle =
+        "#6fc452";
+
+
+      ctx.fillRect(
+        0,
+        y + 5,
+        canvas.width,
+        8
+      );
+
+
+      ctx.fillStyle =
+        "#59a840";
+
+
+      ctx.fillRect(
+        0,
+        y + 32,
+        canvas.width,
+        7
+      );
+    }
+
+
+    // --------------------------------------------------
+    // FENCE
+    // --------------------------------------------------
+
+    if (
+      type === "fence"
+    ) {
+
+      ctx.fillStyle =
+        "#7fc84a";
+
+
+      ctx.fillRect(
+        0,
+        y,
+        canvas.width,
+        tileSize
+      );
+
+
+      drawFence(
+        y
+      );
     }
   }
 
 
-  // ----------------------------
-  // ROAD DIVIDERS
-  // ----------------------------
+  // Road divider
+  ctx.strokeStyle =
+    "white";
+
+  ctx.lineWidth = 3;
 
   ctx.setLineDash(
-    [16, 16]
+    [20, 20]
   );
 
 
@@ -751,36 +1123,15 @@ function drawBackground() {
         cameraOffset;
 
 
-      const left =
-        projectX(
-          0,
-          y
-        );
-
-      const right =
-        projectX(
-          canvas.width,
-          y
-        );
-
-
-      ctx.strokeStyle =
-        "white";
-
-      ctx.lineWidth =
-        2 *
-        getScale(y);
-
-
       ctx.beginPath();
 
       ctx.moveTo(
-        left,
+        0,
         y
       );
 
       ctx.lineTo(
-        right,
+        canvas.width,
         y
       );
 
@@ -794,7 +1145,106 @@ function drawBackground() {
 
 
 // ======================================================
-// PLAYER POSITION
+// FENCE
+// ======================================================
+
+function drawFence(y) {
+
+  // Gate in the middle
+  const gateStart = 250;
+  const gateEnd = 350;
+
+
+  ctx.fillStyle =
+    "#80552d";
+
+
+  for (
+    let x = 0;
+    x < canvas.width;
+    x += 28
+  ) {
+
+    if (
+      x > gateStart - 15 &&
+      x < gateEnd
+    ) {
+      continue;
+    }
+
+
+    ctx.fillRect(
+      x,
+      y + 5,
+      8,
+      40
+    );
+  }
+
+
+  // Horizontal boards
+  ctx.fillStyle =
+    "#9a6738";
+
+
+  ctx.fillRect(
+    0,
+    y + 13,
+    gateStart,
+    7
+  );
+
+
+  ctx.fillRect(
+    gateEnd,
+    y + 13,
+    canvas.width -
+    gateEnd,
+    7
+  );
+
+
+  ctx.fillRect(
+    0,
+    y + 32,
+    gateStart,
+    7
+  );
+
+
+  ctx.fillRect(
+    gateEnd,
+    y + 32,
+    canvas.width -
+    gateEnd,
+    7
+  );
+
+
+  // Gate markers
+  ctx.fillStyle =
+    "#613d20";
+
+
+  ctx.fillRect(
+    gateStart - 5,
+    y,
+    10,
+    48
+  );
+
+
+  ctx.fillRect(
+    gateEnd - 5,
+    y,
+    10,
+    48
+  );
+}
+
+
+// ======================================================
+// PLAYER SCREEN Y
 // ======================================================
 
 function getPlayerScreenY() {
@@ -809,7 +1259,7 @@ function getPlayerScreenY() {
 
 
 // ======================================================
-// 2.5D CHICKEN
+// DRAW CHICKEN 2.5D
 // ======================================================
 
 function drawPlayer() {
@@ -831,52 +1281,60 @@ function drawPlayer() {
     );
 
 
-  const bodyWidth =
-    29 * scale;
-
-  const bodyHeight =
-    24 * scale;
-
   const depth =
     7 * scale;
 
 
-  // ----------------------------
-  // SHADOW
-  // ----------------------------
-
+  // Shadow
   ctx.fillStyle =
-    "rgba(0, 0, 0, 0.20)";
+    "rgba(0,0,0,0.20)";
 
 
   ctx.beginPath();
 
+
   ctx.ellipse(
-    x + 20 * scale,
-    y + 39 * scale,
-    19 * scale,
-    6 * scale,
+    x +
+    20 * scale,
+
+    y +
+    39 * scale,
+
+    18 * scale,
+
+    5 * scale,
+
     0,
     0,
     Math.PI * 2
   );
 
+
   ctx.fill();
 
 
-  // ----------------------------
-  // BODY FRONT
-  // ----------------------------
-
+  // Body
   const bodyX =
-    x + 6 * scale;
+    x +
+    7 * scale;
+
 
   const bodyY =
-    y + 13 * scale;
+    y +
+    13 * scale;
+
+
+  const bodyWidth =
+    28 * scale;
+
+
+  const bodyHeight =
+    23 * scale;
 
 
   ctx.fillStyle =
-    "#f7f7f7";
+    "#f6f6f6";
+
 
   ctx.fillRect(
     bodyX,
@@ -886,11 +1344,46 @@ function drawPlayer() {
   );
 
 
-  // Body side face
+  // Top body face
   ctx.beginPath();
 
   ctx.moveTo(
-    bodyX + bodyWidth,
+    bodyX,
+    bodyY
+  );
+
+  ctx.lineTo(
+    bodyX + depth,
+    bodyY - depth
+  );
+
+  ctx.lineTo(
+    bodyX +
+    bodyWidth +
+    depth,
+    bodyY - depth
+  );
+
+  ctx.lineTo(
+    bodyX +
+    bodyWidth,
+    bodyY
+  );
+
+  ctx.closePath();
+
+  ctx.fillStyle =
+    "white";
+
+  ctx.fill();
+
+
+  // Side body face
+  ctx.beginPath();
+
+  ctx.moveTo(
+    bodyX +
+    bodyWidth,
     bodyY
   );
 
@@ -912,67 +1405,37 @@ function drawPlayer() {
   );
 
   ctx.lineTo(
-    bodyX + bodyWidth,
-    bodyY + bodyHeight
-  );
-
-  ctx.closePath();
-
-  ctx.fillStyle =
-    "#d8d8d8";
-
-  ctx.fill();
-
-
-  // Body top face
-  ctx.beginPath();
-
-  ctx.moveTo(
-    bodyX,
-    bodyY
-  );
-
-  ctx.lineTo(
-    bodyX + depth,
-    bodyY - depth
-  );
-
-  ctx.lineTo(
     bodyX +
-    bodyWidth +
-    depth,
-    bodyY - depth
-  );
-
-  ctx.lineTo(
-    bodyX + bodyWidth,
-    bodyY
+    bodyWidth,
+    bodyY +
+    bodyHeight
   );
 
   ctx.closePath();
 
   ctx.fillStyle =
-    "#ffffff";
+    "#d4d4d4";
 
   ctx.fill();
 
 
-  // ----------------------------
-  // HEAD
-  // ----------------------------
-
-  const headSize =
-    20 * scale;
-
+  // Head
   const headX =
-    x + 11 * scale;
+    x +
+    11 * scale;
+
 
   const headY =
     y;
 
 
+  const headSize =
+    20 * scale;
+
+
   ctx.fillStyle =
-    "#fafafa";
+    "white";
+
 
   ctx.fillRect(
     headX,
@@ -986,7 +1449,8 @@ function drawPlayer() {
   ctx.beginPath();
 
   ctx.moveTo(
-    headX + headSize,
+    headX +
+    headSize,
     headY
   );
 
@@ -1008,60 +1472,32 @@ function drawPlayer() {
   );
 
   ctx.lineTo(
-    headX + headSize,
-    headY + headSize
-  );
-
-  ctx.closePath();
-
-  ctx.fillStyle =
-    "#dddddd";
-
-  ctx.fill();
-
-
-  // Head top
-  ctx.beginPath();
-
-  ctx.moveTo(
-    headX,
-    headY
-  );
-
-  ctx.lineTo(
-    headX + depth,
-    headY - depth
-  );
-
-  ctx.lineTo(
     headX +
-    headSize +
-    depth,
-    headY - depth
-  );
-
-  ctx.lineTo(
-    headX + headSize,
-    headY
+    headSize,
+    headY +
+    headSize
   );
 
   ctx.closePath();
 
   ctx.fillStyle =
-    "#ffffff";
+    "#dcdcdc";
 
   ctx.fill();
 
 
   // Eye
   ctx.fillStyle =
-    "#111";
+    "black";
+
 
   ctx.fillRect(
     headX +
     13 * scale,
+
     headY +
     6 * scale,
+
     3 * scale,
     3 * scale
   );
@@ -1069,32 +1505,31 @@ function drawPlayer() {
 
   // Beak
   ctx.fillStyle =
-    "#f4a020";
+    "#f5a623";
+
 
   ctx.beginPath();
 
   ctx.moveTo(
     headX +
-    headSize +
-    depth,
+    headSize,
     headY +
-    8 * scale
+    7 * scale
   );
 
   ctx.lineTo(
     headX +
     headSize +
-    15 * scale,
+    14 * scale,
     headY +
     11 * scale
   );
 
   ctx.lineTo(
     headX +
-    headSize +
-    depth,
+    headSize,
     headY +
-    14 * scale
+    15 * scale
   );
 
   ctx.closePath();
@@ -1104,7 +1539,8 @@ function drawPlayer() {
 
   // Comb
   ctx.fillStyle =
-    "#d92727";
+    "#d92828";
+
 
   for (
     let i = 0;
@@ -1114,14 +1550,17 @@ function drawPlayer() {
 
     ctx.fillRect(
       headX +
-      (3 + i * 6) *
+      (
+        3 +
+        i * 6
+      ) *
       scale,
 
       headY -
-      (6 + i % 2 * 2) *
-      scale,
+      6 * scale,
 
       5 * scale,
+
       7 * scale
     );
   }
@@ -1129,44 +1568,56 @@ function drawPlayer() {
 
   // Wing
   ctx.fillStyle =
-    "#e1e1e1";
+    "#dedede";
+
 
   ctx.fillRect(
     bodyX +
     5 * scale,
+
     bodyY +
     6 * scale,
-    12 * scale,
-    10 * scale
+
+    11 * scale,
+
+    9 * scale
   );
 
 
   // Legs
   ctx.fillStyle =
-    "#e79019";
+    "#e59018";
+
 
   ctx.fillRect(
     bodyX +
     7 * scale,
+
     bodyY +
     bodyHeight,
+
     3 * scale,
+
     7 * scale
   );
+
 
   ctx.fillRect(
     bodyX +
     20 * scale,
+
     bodyY +
     bodyHeight,
+
     3 * scale,
+
     7 * scale
   );
 }
 
 
 // ======================================================
-// 2.5D VEHICLES
+// VEHICLES
 // ======================================================
 
 function drawCars() {
@@ -1207,10 +1658,6 @@ function drawCars() {
       scale;
 
 
-    const height =
-      24 * scale;
-
-
     const depth =
       8 * scale;
 
@@ -1219,23 +1666,27 @@ function drawCars() {
     ctx.fillStyle =
       "rgba(0,0,0,0.22)";
 
-    ctx.fillRect(
-      x + 4 * scale,
-      y + 23 * scale,
-      width,
-      7 * scale
-    );
-
-
-    // Main front body
-    ctx.fillStyle =
-      car.color;
 
     ctx.fillRect(
       x,
-      y + 6 * scale,
+      y +
+      27 * scale,
       width,
-      height
+      6 * scale
+    );
+
+
+    // Main body
+    ctx.fillStyle =
+      car.color;
+
+
+    ctx.fillRect(
+      x,
+      y +
+      6 * scale,
+      width,
+      24 * scale
     );
 
 
@@ -1244,28 +1695,36 @@ function drawCars() {
 
     ctx.moveTo(
       x,
-      y + 6 * scale
+      y +
+      6 * scale
     );
 
     ctx.lineTo(
       x + depth,
-      y - depth + 6 * scale
+      y -
+      depth +
+      6 * scale
     );
 
     ctx.lineTo(
-      x + width + depth,
-      y - depth + 6 * scale
+      x +
+      width +
+      depth,
+      y -
+      depth +
+      6 * scale
     );
 
     ctx.lineTo(
       x + width,
-      y + 6 * scale
+      y +
+      6 * scale
     );
 
     ctx.closePath();
 
     ctx.fillStyle =
-      lightenColor(
+      adjustColor(
         car.color,
         25
       );
@@ -1278,71 +1737,85 @@ function drawCars() {
 
     ctx.moveTo(
       x + width,
-      y + 6 * scale
+      y +
+      6 * scale
     );
 
     ctx.lineTo(
-      x + width + depth,
-      y - depth + 6 * scale
-    );
-
-    ctx.lineTo(
-      x + width + depth,
-      y + height -
+      x +
+      width +
+      depth,
+      y -
       depth +
       6 * scale
     );
 
     ctx.lineTo(
+      x +
+      width +
+      depth,
+      y +
+      22 * scale
+    );
+
+    ctx.lineTo(
       x + width,
-      y + height +
-      6 * scale
+      y +
+      30 * scale
     );
 
     ctx.closePath();
 
     ctx.fillStyle =
-      darkenColor(
+      adjustColor(
         car.color,
-        35
+        -35
       );
 
     ctx.fill();
 
 
-    // Roof / cab
+    // Roof
     if (
       car.type !== "truck"
     ) {
 
       ctx.fillStyle =
         car.type === "taxi"
-          ? "#f8cf29"
-          : lightenColor(
+          ? "#f8d43b"
+          : adjustColor(
               car.color,
-              10
+              12
             );
 
 
       ctx.fillRect(
-        x + 18 * scale,
+        x +
+        18 * scale,
+
         y,
+
         Math.max(
           25 * scale,
-          width - 38 * scale
+          width -
+          38 * scale
         ),
+
         12 * scale
       );
 
 
       // Windows
       ctx.fillStyle =
-        "#8fd5e8";
+        "#91d8ea";
+
 
       ctx.fillRect(
-        x + 23 * scale,
-        y + 2 * scale,
-        17 * scale,
+        x +
+        23 * scale,
+        y +
+        2 * scale,
+        16 * scale,
         8 * scale
       );
 
@@ -1351,46 +1824,57 @@ function drawCars() {
         x +
         width -
         38 * scale,
-        y + 2 * scale,
-        17 * scale,
+        y +
+        2 * scale,
+        16 * scale,
         8 * scale
       );
     }
 
 
-    // Truck
+    // Truck cab
     if (
       car.type === "truck"
     ) {
 
       ctx.fillStyle =
-        "#d9d9d9";
+        "#dedede";
+
 
       ctx.fillRect(
         x +
         width -
-        33 * scale,
-        y + 7 * scale,
-        33 * scale,
+        34 * scale,
+
+        y +
+        7 * scale,
+
+        34 * scale,
+
         23 * scale
       );
 
 
       ctx.fillStyle =
-        "#8fd5e8";
+        "#91d8ea";
+
 
       ctx.fillRect(
         x +
         width -
         27 * scale,
-        y + 10 * scale,
+
+        y +
+        10 * scale,
+
         17 * scale,
+
         9 * scale
       );
     }
 
 
-    // Taxi sign
+    // Taxi light
     if (
       car.type === "taxi"
     ) {
@@ -1398,13 +1882,17 @@ function drawCars() {
       ctx.fillStyle =
         "white";
 
+
       ctx.fillRect(
         x +
         width / 2 -
         10 * scale,
+
         y -
         5 * scale,
+
         20 * scale,
+
         6 * scale
       );
     }
@@ -1412,14 +1900,16 @@ function drawCars() {
 
     // Wheels
     ctx.fillStyle =
-      "#181818";
+      "#111";
 
 
     ctx.beginPath();
 
     ctx.arc(
-      x + 17 * scale,
-      y + 31 * scale,
+      x +
+      18 * scale,
+      y +
+      31 * scale,
       5 * scale,
       0,
       Math.PI * 2
@@ -1433,8 +1923,9 @@ function drawCars() {
     ctx.arc(
       x +
       width -
-      17 * scale,
-      y + 31 * scale,
+      18 * scale,
+      y +
+      31 * scale,
       5 * scale,
       0,
       Math.PI * 2
@@ -1442,120 +1933,6 @@ function drawCars() {
 
     ctx.fill();
   }
-}
-
-
-// ======================================================
-// COLOR HELPERS
-// ======================================================
-
-function lightenColor(color, amount) {
-  return adjustColor(
-    color,
-    amount
-  );
-}
-
-
-function darkenColor(color, amount) {
-  return adjustColor(
-    color,
-    -amount
-  );
-}
-
-
-function adjustColor(color, amount) {
-
-  if (
-    !color.startsWith("#")
-  ) {
-    return color;
-  }
-
-
-  let value =
-    color.substring(1);
-
-
-  if (
-    value.length === 3
-  ) {
-
-    value =
-      value
-        .split("")
-        .map(
-          letter =>
-            letter + letter
-        )
-        .join("");
-  }
-
-
-  let number =
-    parseInt(
-      value,
-      16
-    );
-
-
-  let red =
-    (number >> 16) +
-    amount;
-
-
-  let green =
-    ((number >> 8) & 0x00ff) +
-    amount;
-
-
-  let blue =
-    (number & 0x0000ff) +
-    amount;
-
-
-  red =
-    Math.max(
-      0,
-      Math.min(
-        255,
-        red
-      )
-    );
-
-
-  green =
-    Math.max(
-      0,
-      Math.min(
-        255,
-        green
-      )
-    );
-
-
-  blue =
-    Math.max(
-      0,
-      Math.min(
-        255,
-        blue
-      )
-    );
-
-
-  return (
-    "#" +
-    (
-      (1 << 24) +
-      (red << 16) +
-      (green << 8) +
-      blue
-    )
-      .toString(16)
-      .slice(1)
-  );
 }
 
 
@@ -1588,7 +1965,8 @@ function moveCars() {
     if (
       car.direction === -1 &&
       car.x +
-      car.width < 0
+      car.width <
+      0
     ) {
 
       car.x =
@@ -1599,20 +1977,20 @@ function moveCars() {
 
 
 // ======================================================
-// 2.5D BOATS
+// LOGS
 // ======================================================
 
-function drawBoats() {
+function drawLogs() {
 
   for (
-    let boat of boats
+    let log of logs
   ) {
 
     const y =
-      boat.row *
+      log.row *
       tileSize +
       cameraOffset +
-      8;
+      9;
 
 
     if (
@@ -1630,167 +2008,154 @@ function drawBoats() {
 
     const x =
       projectX(
-        boat.x,
+        log.x,
         y
       );
 
 
     const width =
-      boat.width *
+      log.width *
       scale;
-
-
-    const height =
-      22 * scale;
-
-
-    const depth =
-      7 * scale;
 
 
     // Shadow
     ctx.fillStyle =
       "rgba(0,0,0,0.15)";
 
+
     ctx.fillRect(
       x,
-      y + 27 * scale,
+      y +
+      26 * scale,
       width,
       5 * scale
     );
 
 
-    // Boat front
+    // Log body
     ctx.fillStyle =
-      "#7a421e";
+      "#7b421f";
+
 
     ctx.fillRect(
       x,
-      y + 8 * scale,
+      y +
+      7 * scale,
       width,
-      height
+      23 * scale
     );
 
 
-    // Top face
-    ctx.beginPath();
-
-    ctx.moveTo(
-      x,
-      y + 8 * scale
-    );
-
-    ctx.lineTo(
-      x + depth,
-      y
-    );
-
-    ctx.lineTo(
-      x + width + depth,
-      y
-    );
-
-    ctx.lineTo(
-      x + width,
-      y + 8 * scale
-    );
-
-    ctx.closePath();
-
+    // Top
     ctx.fillStyle =
-      "#b96f34";
+      "#a96332";
 
-    ctx.fill();
-
-
-    // Side
-    ctx.beginPath();
-
-    ctx.moveTo(
-      x + width,
-      y + 8 * scale
-    );
-
-    ctx.lineTo(
-      x + width + depth,
-      y
-    );
-
-    ctx.lineTo(
-      x + width + depth,
-      y + 18 * scale
-    );
-
-    ctx.lineTo(
-      x + width,
-      y + 30 * scale
-    );
-
-    ctx.closePath();
-
-    ctx.fillStyle =
-      "#542a11";
-
-    ctx.fill();
-
-
-    // Inside
-    ctx.fillStyle =
-      "#d99a58";
 
     ctx.fillRect(
-      x + 15 * scale,
-      y + 9 * scale,
+      x +
+      5 * scale,
+      y +
+      4 * scale,
       width -
-      30 * scale,
-      10 * scale
+      10 * scale,
+      8 * scale
     );
+
+
+    // Rings
+    ctx.strokeStyle =
+      "#4e2914";
+
+    ctx.lineWidth =
+      2 * scale;
+
+
+    ctx.beginPath();
+
+    ctx.arc(
+      x +
+      10 * scale,
+      y +
+      18 * scale,
+      7 * scale,
+      0,
+      Math.PI * 2
+    );
+
+    ctx.stroke();
+
+
+    // Bark lines
+    ctx.fillStyle =
+      "#5b3018";
+
+
+    for (
+      let bx =
+        35 * scale;
+      bx <
+      width -
+      10 * scale;
+      bx +=
+        35 * scale
+    ) {
+
+      ctx.fillRect(
+        x + bx,
+        y +
+        12 * scale,
+        3 * scale,
+        13 * scale
+      );
+    }
   }
 }
 
 
 // ======================================================
-// MOVE BOATS
+// MOVE LOGS
 // ======================================================
 
-function moveBoats() {
+function moveLogs() {
 
   for (
-    let boat of boats
+    let log of logs
   ) {
 
-    boat.x +=
-      boat.speed *
-      boat.direction;
+    log.x +=
+      log.speed *
+      log.direction;
 
 
     if (
-      boat.direction === 1 &&
-      boat.x >
-      canvas.width + 20
+      log.direction === 1 &&
+      log.x >
+      canvas.width + 30
     ) {
 
-      boat.x =
-        -boat.width - 20;
+      log.x =
+        -log.width -
+        30;
     }
 
 
     if (
-      boat.direction === -1 &&
-      boat.x +
-      boat.width <
-      -20
+      log.direction === -1 &&
+      log.x +
+      log.width <
+      -30
     ) {
 
-      boat.x =
-        canvas.width + 20;
+      log.x =
+        canvas.width +
+        30;
     }
   }
 }
 
 
 // ======================================================
-// 2.5D TRAIN TRACKS
+// TRAIN TRACKS
 // ======================================================
 
 function drawTrainTracks() {
@@ -1815,103 +2180,79 @@ function drawTrainTracks() {
 
 
     // Gravel
-    drawPerspectiveBand(
+    ctx.fillStyle =
+      "#747474";
+
+
+    ctx.fillRect(
+      0,
       y,
-      tileSize,
-      "#747474"
+      canvas.width,
+      tileSize
     );
 
 
     // Wooden ties
+    ctx.fillStyle =
+      "#60401f";
+
+
     for (
-      let worldX = 0;
-      worldX <
+      let x = -5;
+      x <
       canvas.width;
-      worldX += 28
+      x += 27
     ) {
-
-      const scale =
-        getScale(
-          y + 25
-        );
-
-
-      const x =
-        projectX(
-          worldX,
-          y + 25
-        );
-
-
-      ctx.fillStyle =
-        "#62401f";
-
 
       ctx.fillRect(
         x,
-        y + 7 * scale,
-        11 * scale,
-        35 * scale
+        y + 6,
+        13,
+        38
       );
     }
 
 
+    // Rail shadows
+    ctx.fillStyle =
+      "#404040";
+
+
+    ctx.fillRect(
+      0,
+      y + 13,
+      canvas.width,
+      7
+    );
+
+
+    ctx.fillRect(
+      0,
+      y + 32,
+      canvas.width,
+      7
+    );
+
+
     // Rails
-    const railY1 =
-      y + 14;
-
-    const railY2 =
-      y + 34;
+    ctx.fillStyle =
+      "#dddddd";
 
 
-    ctx.strokeStyle =
-      "#d6d6d6";
-
-    ctx.lineWidth =
-      5 *
-      getScale(y);
-
-
-    ctx.beginPath();
-
-    ctx.moveTo(
-      projectX(
-        0,
-        railY1
-      ),
-      railY1
+    ctx.fillRect(
+      0,
+      y + 12,
+      canvas.width,
+      4
     );
 
-    ctx.lineTo(
-      projectX(
-        canvas.width,
-        railY1
-      ),
-      railY1
+
+    ctx.fillRect(
+      0,
+      y + 31,
+      canvas.width,
+      4
     );
-
-    ctx.stroke();
-
-
-    ctx.beginPath();
-
-    ctx.moveTo(
-      projectX(
-        0,
-        railY2
-      ),
-      railY2
-    );
-
-    ctx.lineTo(
-      projectX(
-        canvas.width,
-        railY2
-      ),
-      railY2
-    );
-
-    ctx.stroke();
 
 
     drawTrainSignal(
@@ -1926,18 +2267,10 @@ function drawTrainTracks() {
 // TRAIN SIGNAL
 // ======================================================
 
-function drawTrainSignal(track, y) {
-
-  const scale =
-    getScale(y);
-
-
-  const x =
-    projectX(
-      38,
-      y
-    );
-
+function drawTrainSignal(
+  track,
+  y
+) {
 
   const cycleTime =
     (
@@ -1947,41 +2280,10 @@ function drawTrainSignal(track, y) {
     track.cycleLength;
 
 
-  const warningStart =
-    track.cycleLength -
-    track.warningTime;
-
-
   const warning =
     cycleTime >=
-    warningStart;
-
-
-  // Pole
-  ctx.fillStyle =
-    "#333";
-
-  ctx.fillRect(
-    x,
-    y -
-    42 * scale,
-    6 * scale,
-    47 * scale
-  );
-
-
-  // Signal box
-  ctx.fillStyle =
-    "#171717";
-
-  ctx.fillRect(
-    x -
-    14 * scale,
-    y -
-    43 * scale,
-    36 * scale,
-    21 * scale
-  );
+    track.cycleLength -
+    track.warningTime;
 
 
   const flashing =
@@ -1992,15 +2294,39 @@ function drawTrainSignal(track, y) {
     2 === 0;
 
 
-  // Light 1
+  // Pole
+  ctx.fillStyle =
+    "#333";
+
+
+  ctx.fillRect(
+    25,
+    y - 40,
+    6,
+    45
+  );
+
+
+  // Signal box
+  ctx.fillStyle =
+    "#111";
+
+
+  ctx.fillRect(
+    10,
+    y - 43,
+    36,
+    22
+  );
+
+
+  // Red lights
   ctx.beginPath();
 
   ctx.arc(
-    x -
-    5 * scale,
-    y -
-    32 * scale,
-    6 * scale,
+    19,
+    y - 32,
+    6,
     0,
     Math.PI * 2
   );
@@ -2008,21 +2334,18 @@ function drawTrainSignal(track, y) {
   ctx.fillStyle =
     warning &&
     flashing
-      ? "#ff1e1e"
+      ? "red"
       : "#520000";
 
   ctx.fill();
 
 
-  // Light 2
   ctx.beginPath();
 
   ctx.arc(
-    x +
-    12 * scale,
-    y -
-    32 * scale,
-    6 * scale,
+    37,
+    y - 32,
+    6,
     0,
     Math.PI * 2
   );
@@ -2030,7 +2353,7 @@ function drawTrainSignal(track, y) {
   ctx.fillStyle =
     warning &&
     !flashing
-      ? "#ff1e1e"
+      ? "red"
       : "#520000";
 
   ctx.fill();
@@ -2040,13 +2363,13 @@ function drawTrainSignal(track, y) {
   ctx.fillStyle =
     "#d6af3b";
 
+
   ctx.beginPath();
 
   ctx.arc(
-    x + 3 * scale,
-    y -
-    52 * scale,
-    8 * scale,
+    28,
+    y - 52,
+    8,
     0,
     Math.PI * 2
   );
@@ -2063,23 +2386,21 @@ function playTrainBell() {
 
   try {
 
-    const AudioContextClass =
+    const AC =
       window.AudioContext ||
       window.webkitAudioContext;
 
 
-    const audioContext =
-      new AudioContextClass();
+    const audio =
+      new AC();
 
 
     const oscillator =
-      audioContext
-        .createOscillator();
+      audio.createOscillator();
 
 
     const gain =
-      audioContext
-        .createGain();
+      audio.createGain();
 
 
     oscillator.connect(
@@ -2088,12 +2409,12 @@ function playTrainBell() {
 
 
     gain.connect(
-      audioContext.destination
+      audio.destination
     );
 
 
     oscillator.frequency.value =
-      700;
+      680;
 
 
     oscillator.type =
@@ -2101,15 +2422,15 @@ function playTrainBell() {
 
 
     gain.gain.setValueAtTime(
-      0.12,
-      audioContext.currentTime
+      0.10,
+      audio.currentTime
     );
 
 
     gain.gain.exponentialRampToValueAtTime(
       0.001,
-      audioContext.currentTime +
-      0.25
+      audio.currentTime +
+      0.3
     );
 
 
@@ -2117,26 +2438,24 @@ function playTrainBell() {
 
 
     oscillator.stop(
-      audioContext.currentTime +
-      0.25
+      audio.currentTime +
+      0.3
     );
 
   } catch (error) {
 
-    // Game continues
   }
 }
 
 
 // ======================================================
-// 2.5D TRAIN
+// TRAIN
 // ======================================================
 
 function updateAndDrawTrains() {
 
   for (
-    let track
-    of trainTracks
+    let track of trainTracks
   ) {
 
     const y =
@@ -2188,12 +2507,11 @@ function updateAndDrawTrains() {
       cycleTime >
       track.trainTime
     ) {
-
       continue;
     }
 
 
-    const fullTrainWidth =
+    const fullWidth =
       900;
 
 
@@ -2205,14 +2523,14 @@ function updateAndDrawTrains() {
     ) {
 
       trainX =
-        -fullTrainWidth +
+        -fullWidth +
         (
           cycleTime /
           track.trainTime
         ) *
         (
           canvas.width +
-          fullTrainWidth
+          fullWidth
         );
 
     } else {
@@ -2225,36 +2543,31 @@ function updateAndDrawTrains() {
         ) *
         (
           canvas.width +
-          fullTrainWidth
+          fullWidth
         );
     }
 
 
-    drawLongTrain(
+    drawTrain(
       trainX,
       y,
       track.direction
     );
 
 
-    // Collision stays logical
     if (
       player.row ===
       track.row
     ) {
 
-      const collision =
+      if (
         player.x <
         trainX +
-        fullTrainWidth &&
+        fullWidth &&
 
         player.x +
         player.width >
-        trainX;
-
-
-      if (
-        collision
+        trainX
       ) {
 
         restartGame();
@@ -2267,11 +2580,11 @@ function updateAndDrawTrains() {
 
 
 // ======================================================
-// DRAW LONG 2.5D TRAIN
+// DRAW LONG TRAIN
 // ======================================================
 
-function drawLongTrain(
-  worldTrainX,
+function drawTrain(
+  trainX,
   y,
   direction
 ) {
@@ -2284,31 +2597,25 @@ function drawLongTrain(
     130;
 
 
-  const fullTrainWidth =
+  const totalWidth =
     900;
 
 
   const engineWorldX =
     direction === 1
-      ? worldTrainX +
-        fullTrainWidth -
+      ? trainX +
+        totalWidth -
         engineWidth
-      : worldTrainX;
+      : trainX;
 
 
-  drawTrainEngine(
+  drawTrainPiece(
     engineWorldX,
     y,
-    direction,
-    scale
+    engineWidth,
+    "#272727",
+    true
   );
-
-
-  const trainCarWidth =
-    120;
-
-  const gap =
-    8;
 
 
   for (
@@ -2317,240 +2624,61 @@ function drawLongTrain(
     i++
   ) {
 
-    let carWorldX;
+    const carWidth =
+      120;
+
+
+    let carX;
 
 
     if (
       direction === 1
     ) {
 
-      carWorldX =
+      carX =
         engineWorldX -
-        gap -
-        trainCarWidth -
-        i *
-        (
-          trainCarWidth +
-          gap
-        );
+        128 *
+        (i + 1);
 
     } else {
 
-      carWorldX =
+      carX =
         engineWorldX +
         engineWidth +
-        gap +
-        i *
-        (
-          trainCarWidth +
-          gap
-        );
+        8 +
+        128 *
+        i;
     }
 
 
-    drawTrainCar(
-      carWorldX,
+    drawTrainPiece(
+      carX,
       y,
-      trainCarWidth,
-      scale,
-      i
+      carWidth,
+      i % 2 === 0
+        ? "#363636"
+        : "#454545",
+      false
     );
   }
 }
 
 
 // ======================================================
-// TRAIN ENGINE
+// DRAW TRAIN PIECE
 // ======================================================
 
-function drawTrainEngine(
-  worldX,
-  y,
-  direction,
-  scale
-) {
-
-  const x =
-    projectX(
-      worldX,
-      y
-    );
-
-
-  const width =
-    130 * scale;
-
-
-  const height =
-    35 * scale;
-
-
-  const depth =
-    9 * scale;
-
-
-  // Shadow
-  ctx.fillStyle =
-    "rgba(0,0,0,0.25)";
-
-  ctx.fillRect(
-    x,
-    y + 35 * scale,
-    width,
-    6 * scale
-  );
-
-
-  // Body
-  ctx.fillStyle =
-    "#252525";
-
-  ctx.fillRect(
-    x,
-    y + 6 * scale,
-    width,
-    height
-  );
-
-
-  // Top
-  ctx.beginPath();
-
-  ctx.moveTo(
-    x,
-    y + 6 * scale
-  );
-
-  ctx.lineTo(
-    x + depth,
-    y - depth +
-    6 * scale
-  );
-
-  ctx.lineTo(
-    x + width + depth,
-    y - depth +
-    6 * scale
-  );
-
-  ctx.lineTo(
-    x + width,
-    y + 6 * scale
-  );
-
-  ctx.closePath();
-
-  ctx.fillStyle =
-    "#4a4a4a";
-
-  ctx.fill();
-
-
-  // Side
-  ctx.beginPath();
-
-  ctx.moveTo(
-    x + width,
-    y + 6 * scale
-  );
-
-  ctx.lineTo(
-    x + width + depth,
-    y - depth +
-    6 * scale
-  );
-
-  ctx.lineTo(
-    x + width + depth,
-    y + 29 * scale
-  );
-
-  ctx.lineTo(
-    x + width,
-    y + 41 * scale
-  );
-
-  ctx.closePath();
-
-  ctx.fillStyle =
-    "#131313";
-
-  ctx.fill();
-
-
-  // Red stripe
-  ctx.fillStyle =
-    "#b21f28";
-
-  ctx.fillRect(
-    x,
-    y + 29 * scale,
-    width,
-    6 * scale
-  );
-
-
-  // Window
-  ctx.fillStyle =
-    "#87d8ef";
-
-  const windowX =
-    direction === 1
-      ? x +
-        95 * scale
-      : x +
-        12 * scale;
-
-
-  ctx.fillRect(
-    windowX,
-    y + 12 * scale,
-    21 * scale,
-    12 * scale
-  );
-
-
-  // Headlight
-  ctx.fillStyle =
-    "#ffe95c";
-
-
-  if (
-    direction === 1
-  ) {
-
-    ctx.fillRect(
-      x +
-      width -
-      4 * scale,
-      y + 18 * scale,
-      5 * scale,
-      8 * scale
-    );
-
-  } else {
-
-    ctx.fillRect(
-      x,
-      y + 18 * scale,
-      5 * scale,
-      8 * scale
-    );
-  }
-}
-
-
-// ======================================================
-// TRAIN CAR
-// ======================================================
-
-function drawTrainCar(
+function drawTrainPiece(
   worldX,
   y,
   worldWidth,
-  scale,
-  index
+  color,
+  engine
 ) {
+
+  const scale =
+    getScale(y);
+
 
   const x =
     projectX(
@@ -2564,94 +2692,43 @@ function drawTrainCar(
     scale;
 
 
-  const depth =
-    8 * scale;
-
-
-  // Main body
   ctx.fillStyle =
-    index % 2 === 0
-      ? "#343434"
-      : "#424242";
+    color;
 
 
   ctx.fillRect(
     x,
-    y + 8 * scale,
+    y +
+    6 * scale,
     width,
-    32 * scale
+    35 * scale
   );
 
 
-  // Top
-  ctx.beginPath();
-
-  ctx.moveTo(
-    x,
-    y + 8 * scale
-  );
-
-  ctx.lineTo(
-    x + depth,
-    y
-  );
-
-  ctx.lineTo(
-    x + width + depth,
-    y
-  );
-
-  ctx.lineTo(
-    x + width,
-    y + 8 * scale
-  );
-
-  ctx.closePath();
-
+  // Roof
   ctx.fillStyle =
     "#555";
 
-  ctx.fill();
 
-
-  // Side face
-  ctx.beginPath();
-
-  ctx.moveTo(
-    x + width,
-    y + 8 * scale
+  ctx.fillRect(
+    x +
+    4 * scale,
+    y,
+    width -
+    8 * scale,
+    8 * scale
   );
-
-  ctx.lineTo(
-    x + width + depth,
-    y
-  );
-
-  ctx.lineTo(
-    x + width + depth,
-    y + 30 * scale
-  );
-
-  ctx.lineTo(
-    x + width,
-    y + 40 * scale
-  );
-
-  ctx.closePath();
-
-  ctx.fillStyle =
-    "#222";
-
-  ctx.fill();
 
 
   // Stripe
   ctx.fillStyle =
-    "#8e151d";
+    "#9e1b24";
+
 
   ctx.fillRect(
     x,
-    y + 30 * scale,
+    y +
+    30 * scale,
     width,
     5 * scale
   );
@@ -2659,23 +2736,595 @@ function drawTrainCar(
 
   // Windows
   ctx.fillStyle =
-    "#8fd8ef";
+    "#88d7ee";
 
 
   for (
-    let w = 13;
-    w <
-    worldWidth - 15;
-    w += 29
+    let wx =
+      15 * scale;
+    wx <
+      width -
+      18 * scale;
+    wx +=
+      30 * scale
   ) {
 
     ctx.fillRect(
-      x + w * scale,
-      y + 14 * scale,
+      x + wx,
+      y +
+      13 * scale,
       18 * scale,
       10 * scale
     );
   }
+
+
+  if (
+    engine
+  ) {
+
+    ctx.fillStyle =
+      "#ffe65c";
+
+
+    ctx.fillRect(
+      x +
+      width -
+      5 * scale,
+      y +
+      18 * scale,
+      5 * scale,
+      8 * scale
+    );
+  }
+}
+
+
+// ======================================================
+// AIRPLANES
+// ======================================================
+
+function updateAirplanes() {
+
+  for (
+    let plane of airplanes
+  ) {
+
+    plane.worldY +=
+      plane.speed;
+
+
+    const field =
+      plane.field;
+
+
+    const bottomLimit =
+      (
+        field.bottomRow +
+        1
+      ) *
+      tileSize;
+
+
+    // Plane passed player side
+    // reset back to far end
+    if (
+      plane.worldY >
+      bottomLimit +
+      70
+    ) {
+
+      plane.worldY =
+        field.topRow *
+        tileSize -
+        80 -
+        Math.random() *
+        150;
+
+
+      plane.x =
+        40 +
+        Math.random() *
+        (
+          canvas.width -
+          120
+        );
+    }
+  }
+}
+
+
+// ======================================================
+// DRAW AIRPLANES
+// ======================================================
+
+function drawAirplanes() {
+
+  for (
+    let plane of airplanes
+  ) {
+
+    const y =
+      plane.worldY +
+      cameraOffset;
+
+
+    if (
+      y < -100 ||
+      y >
+      canvas.height + 100
+    ) {
+      continue;
+    }
+
+
+    const scale =
+      getScale(y);
+
+
+    const x =
+      projectX(
+        plane.x,
+        y
+      );
+
+
+    const width =
+      plane.width *
+      scale;
+
+
+    // Shadow
+    ctx.fillStyle =
+      "rgba(0,0,0,0.18)";
+
+
+    ctx.beginPath();
+
+    ctx.ellipse(
+      x +
+      width / 2,
+      y +
+      38 * scale,
+      30 * scale,
+      7 * scale,
+      0,
+      0,
+      Math.PI * 2
+    );
+
+    ctx.fill();
+
+
+    // Main fuselage
+    ctx.fillStyle =
+      "#eeeeee";
+
+
+    ctx.fillRect(
+      x +
+      25 * scale,
+      y,
+      20 * scale,
+      47 * scale
+    );
+
+
+    // Nose
+    ctx.beginPath();
+
+    ctx.moveTo(
+      x +
+      25 * scale,
+      y
+    );
+
+    ctx.lineTo(
+      x +
+      35 * scale,
+      y -
+      14 * scale
+    );
+
+    ctx.lineTo(
+      x +
+      45 * scale,
+      y
+    );
+
+    ctx.closePath();
+
+    ctx.fillStyle =
+      "#f8f8f8";
+
+    ctx.fill();
+
+
+    // Main wings
+    ctx.fillStyle =
+      "#d7d7d7";
+
+
+    ctx.beginPath();
+
+    ctx.moveTo(
+      x +
+      28 * scale,
+      y +
+      15 * scale
+    );
+
+    ctx.lineTo(
+      x,
+      y +
+      31 * scale
+    );
+
+    ctx.lineTo(
+      x +
+      28 * scale,
+      y +
+      27 * scale
+    );
+
+    ctx.closePath();
+
+    ctx.fill();
+
+
+    ctx.beginPath();
+
+    ctx.moveTo(
+      x +
+      42 * scale,
+      y +
+      15 * scale
+    );
+
+    ctx.lineTo(
+      x +
+      70 * scale,
+      y +
+      31 * scale
+    );
+
+    ctx.lineTo(
+      x +
+      42 * scale,
+      y +
+      27 * scale
+    );
+
+    ctx.closePath();
+
+    ctx.fill();
+
+
+    // Tail wings
+    ctx.fillStyle =
+      "#c5c5c5";
+
+
+    ctx.fillRect(
+      x +
+      15 * scale,
+      y +
+      39 * scale,
+      40 * scale,
+      7 * scale
+    );
+
+
+    // Cockpit
+    ctx.fillStyle =
+      "#7fc8e8";
+
+
+    ctx.fillRect(
+      x +
+      29 * scale,
+      y +
+      3 * scale,
+      12 * scale,
+      8 * scale
+    );
+
+
+    // Red nose light
+    ctx.fillStyle =
+      "#e53935";
+
+
+    ctx.fillRect(
+      x +
+      32 * scale,
+      y -
+      12 * scale,
+      6 * scale,
+      5 * scale
+    );
+  }
+}
+
+
+// ======================================================
+// AIRPLANE COLLISION
+// ======================================================
+
+function checkAirplaneCollision() {
+
+  if (
+    rows.get(
+      player.row
+    ) !== "airfield"
+  ) {
+    return false;
+  }
+
+
+  const playerYWorld =
+    player.row *
+    tileSize +
+    5;
+
+
+  for (
+    let plane of airplanes
+  ) {
+
+    const field =
+      plane.field;
+
+
+    if (
+      player.row >
+      field.bottomRow ||
+      player.row <
+      field.topRow
+    ) {
+      continue;
+    }
+
+
+    const planeLeft =
+      plane.x;
+
+
+    const planeRight =
+      plane.x +
+      plane.width;
+
+
+    const planeTop =
+      plane.worldY;
+
+
+    const planeBottom =
+      plane.worldY +
+      plane.height;
+
+
+    const playerLeft =
+      player.x;
+
+
+    const playerRight =
+      player.x +
+      player.width;
+
+
+    const playerTop =
+      playerYWorld;
+
+
+    const playerBottom =
+      playerYWorld +
+      player.height;
+
+
+    const collision =
+      playerLeft <
+      planeRight &&
+
+      playerRight >
+      planeLeft &&
+
+      playerTop <
+      planeBottom &&
+
+      playerBottom >
+      planeTop;
+
+
+    if (
+      collision
+    ) {
+
+      restartGame();
+
+      return true;
+    }
+  }
+
+
+  return false;
+}
+
+
+// ======================================================
+// FENCE COLLISION
+// ======================================================
+
+function checkFenceCollision() {
+
+  if (
+    rows.get(
+      player.row
+    ) !== "fence"
+  ) {
+    return false;
+  }
+
+
+  // Gate is between x 250 and 350
+  const gateLeft =
+    250;
+
+
+  const gateRight =
+    350;
+
+
+  if (
+    player.x <
+    gateLeft ||
+
+    player.x +
+    player.width >
+    gateRight
+  ) {
+
+    // Push player back instead
+    // of restarting entire game
+    player.row++;
+
+    return true;
+  }
+
+
+  return false;
+}
+
+
+// ======================================================
+// ROAD COLLISION
+// ======================================================
+
+function checkCarCollision() {
+
+  if (
+    rows.get(
+      player.row
+    ) !== "road"
+  ) {
+    return false;
+  }
+
+
+  for (
+    let car of cars
+  ) {
+
+    if (
+      car.row !==
+      player.row
+    ) {
+      continue;
+    }
+
+
+    if (
+      player.x <
+      car.x +
+      car.width &&
+
+      player.x +
+      player.width >
+      car.x
+    ) {
+
+      restartGame();
+
+      return true;
+    }
+  }
+
+
+  return false;
+}
+
+
+// ======================================================
+// WATER / LOG COLLISION
+// ======================================================
+
+function checkWaterCollision() {
+
+  if (
+    rows.get(
+      player.row
+    ) !== "water"
+  ) {
+    return false;
+  }
+
+
+  let standingOnLog =
+    null;
+
+
+  for (
+    let log of logs
+  ) {
+
+    if (
+      log.row !==
+      player.row
+    ) {
+      continue;
+    }
+
+
+    if (
+      player.x +
+      player.width >
+      log.x &&
+
+      player.x <
+      log.x +
+      log.width
+    ) {
+
+      standingOnLog =
+        log;
+
+      break;
+    }
+  }
+
+
+  if (
+    !standingOnLog
+  ) {
+
+    restartGame();
+
+    return true;
+  }
+
+
+  // Log carries chicken sideways
+  player.x +=
+    standingOnLog.speed *
+    standingOnLog.direction;
+
+
+  if (
+    player.x +
+    player.width <
+    0 ||
+
+    player.x >
+    canvas.width
+  ) {
+
+    restartGame();
+
+    return true;
+  }
+
+
+  return false;
 }
 
 
@@ -2717,7 +3366,7 @@ function updateCamera() {
     getPlayerScreenY();
 
 
-  let currentSpeed =
+  let speed =
     normalCameraSpeed;
 
 
@@ -2726,7 +3375,7 @@ function updateCamera() {
     dangerZoneY
   ) {
 
-    currentSpeed =
+    speed =
       fastCameraSpeed;
   }
 
@@ -2748,7 +3397,7 @@ function updateCamera() {
   ) {
 
     cameraOffset +=
-      currentSpeed;
+      speed;
 
 
     if (
@@ -2763,144 +3412,8 @@ function updateCamera() {
 
 
   generateMoreWorld(
-    player.row - 45
+    player.row - 55
   );
-}
-
-
-// ======================================================
-// CAR COLLISION
-// ======================================================
-
-function checkCarCollision() {
-
-  if (
-    rows.get(
-      player.row
-    ) !== "road"
-  ) {
-
-    return false;
-  }
-
-
-  for (
-    let car of cars
-  ) {
-
-    if (
-      car.row !==
-      player.row
-    ) {
-      continue;
-    }
-
-
-    const collision =
-      player.x <
-      car.x +
-      car.width &&
-
-      player.x +
-      player.width >
-      car.x;
-
-
-    if (
-      collision
-    ) {
-
-      restartGame();
-
-      return true;
-    }
-  }
-
-
-  return false;
-}
-
-
-// ======================================================
-// WATER COLLISION
-// ======================================================
-
-function checkWaterCollision() {
-
-  if (
-    rows.get(
-      player.row
-    ) !== "water"
-  ) {
-    return;
-  }
-
-
-  let standingOnBoat =
-    null;
-
-
-  for (
-    let boat of boats
-  ) {
-
-    if (
-      boat.row !==
-      player.row
-    ) {
-      continue;
-    }
-
-
-    const touchingBoat =
-      player.x +
-      player.width >
-      boat.x &&
-
-      player.x <
-      boat.x +
-      boat.width;
-
-
-    if (
-      touchingBoat
-    ) {
-
-      standingOnBoat =
-        boat;
-
-      break;
-    }
-  }
-
-
-  if (
-    !standingOnBoat
-  ) {
-
-    restartGame();
-
-    return;
-  }
-
-
-  // Boat carries chicken
-  player.x +=
-    standingOnBoat.speed *
-    standingOnBoat.direction;
-
-
-  if (
-    player.x +
-    player.width <
-    0 ||
-
-    player.x >
-    canvas.width
-  ) {
-
-    restartGame();
-  }
 }
 
 
@@ -2957,7 +3470,9 @@ function gameLoop() {
 
   moveCars();
 
-  moveBoats();
+  moveLogs();
+
+  updateAirplanes();
 
 
   drawBackground();
@@ -2966,7 +3481,9 @@ function gameLoop() {
 
   drawCars();
 
-  drawBoats();
+  drawLogs();
+
+  drawAirplanes();
 
   updateAndDrawTrains();
 
@@ -2981,7 +3498,18 @@ function gameLoop() {
     !hitCar
   ) {
 
-    checkWaterCollision();
+    const hitWater =
+      checkWaterCollision();
+
+
+    if (
+      !hitWater
+    ) {
+
+      checkAirplaneCollision();
+
+      checkFenceCollision();
+    }
   }
 
 
@@ -3008,16 +3536,19 @@ document.addEventListener(
 
 
     if (
-      movementKeys.includes(
+      !movementKeys.includes(
         event.key
       )
     ) {
 
-      event.preventDefault();
-
-      gameStarted =
-        true;
+      return;
     }
+
+
+    event.preventDefault();
+
+    gameStarted =
+      true;
 
 
     // UP
@@ -3029,11 +3560,6 @@ document.addEventListener(
       player.row--;
 
       score++;
-
-
-      generateMoreWorld(
-        player.row - 45
-      );
     }
 
 
@@ -3069,38 +3595,36 @@ document.addEventListener(
     }
 
 
-    // Keep player inside horizontally
+    // Keep player inside canvas
     if (
-      rows.get(
-        player.row
-      ) !== "water"
+      player.x < 5
     ) {
 
-      if (
-        player.x < 5
-      ) {
-
-        player.x =
-          5;
-      }
-
-
-      if (
-        player.x >
-        canvas.width -
-        player.width -
-        5
-      ) {
-
-        player.x =
-          canvas.width -
-          player.width -
-          5;
-      }
+      player.x =
+        5;
     }
 
 
-    // Prevent player going off top
+    if (
+      player.x >
+      canvas.width -
+      player.width -
+      5
+    ) {
+
+      player.x =
+        canvas.width -
+        player.width -
+        5;
+    }
+
+
+    // Immediately check fence
+    // so chicken cannot jump through it
+    checkFenceCollision();
+
+
+    // Camera emergency protection
     const playerScreenY =
       getPlayerScreenY();
 
@@ -3114,6 +3638,11 @@ document.addEventListener(
         minimumVisibleY -
         playerScreenY;
     }
+
+
+    generateMoreWorld(
+      player.row - 55
+    );
 
 
     document
