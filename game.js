@@ -7,9 +7,9 @@ let score = 0;
 let gameStarted = false;
 
 
-// ========================================
+// ======================================================
 // CAMERA
-// ========================================
+// ======================================================
 
 let cameraOffset = 0;
 let targetCameraOffset = 0;
@@ -22,9 +22,9 @@ const dangerZoneY = 140;
 const minimumVisibleY = 70;
 
 
-// ========================================
+// ======================================================
 // PLAYER
-// ========================================
+// ======================================================
 
 const player = {
   x: 280,
@@ -34,9 +34,9 @@ const player = {
 };
 
 
-// ========================================
+// ======================================================
 // WORLD
-// ========================================
+// ======================================================
 
 const rows = new Map();
 
@@ -45,12 +45,91 @@ const boats = [];
 const trainTracks = [];
 
 
-// ========================================
+// ======================================================
+// 2.5D PERSPECTIVE
+// ======================================================
+
+// Objects near the top look smaller.
+// Objects near the bottom look larger.
+
+function getScale(screenY) {
+  let amount = screenY / canvas.height;
+
+  if (amount < 0) {
+    amount = 0;
+  }
+
+  if (amount > 1) {
+    amount = 1;
+  }
+
+  return 0.68 + amount * 0.32;
+}
+
+
+function projectX(worldX, screenY) {
+  const scale = getScale(screenY);
+
+  return (
+    canvas.width / 2 +
+    (worldX - canvas.width / 2) * scale
+  );
+}
+
+
+function projectWidth(width, screenY) {
+  return width * getScale(screenY);
+}
+
+
+// Draw one perspective ground strip
+function drawPerspectiveBand(y, height, color) {
+  const center = canvas.width / 2;
+
+  const topScale = getScale(y);
+  const bottomScale = getScale(y + height);
+
+  const topHalf =
+    (canvas.width / 2) * topScale;
+
+  const bottomHalf =
+    (canvas.width / 2) * bottomScale;
+
+
+  ctx.beginPath();
+
+  ctx.moveTo(
+    center - topHalf,
+    y
+  );
+
+  ctx.lineTo(
+    center + topHalf,
+    y
+  );
+
+  ctx.lineTo(
+    center + bottomHalf,
+    y + height
+  );
+
+  ctx.lineTo(
+    center - bottomHalf,
+    y + height
+  );
+
+  ctx.closePath();
+
+  ctx.fillStyle = color;
+  ctx.fill();
+}
+
+
+// ======================================================
 // VEHICLES
-// ========================================
+// ======================================================
 
 function createCarsForRow(row, direction, speed) {
-
   const vehicleTypes = [
     "car",
     "truck",
@@ -59,32 +138,31 @@ function createCarsForRow(row, direction, speed) {
   ];
 
   const vehicleColors = [
-    "red",
-    "blue",
-    "yellow",
-    "purple",
-    "orange",
-    "green"
+    "#e53935",
+    "#1e88e5",
+    "#fdd835",
+    "#8e24aa",
+    "#fb8c00",
+    "#43a047"
   ];
 
 
   function makeVehicle(x) {
-
     const type =
       vehicleTypes[
         Math.floor(
-          Math.random() *
-          vehicleTypes.length
+          Math.random() * vehicleTypes.length
         )
       ];
+
 
     const color =
       vehicleColors[
         Math.floor(
-          Math.random() *
-          vehicleColors.length
+          Math.random() * vehicleColors.length
         )
       ];
+
 
     let width = 80;
 
@@ -95,6 +173,7 @@ function createCarsForRow(row, direction, speed) {
     if (type === "van") {
       width = 95;
     }
+
 
     cars.push({
       row: row,
@@ -110,76 +189,30 @@ function createCarsForRow(row, direction, speed) {
 
 
   if (direction === 1) {
-
     makeVehicle(-120);
     makeVehicle(230);
-
   } else {
-
     makeVehicle(650);
     makeVehicle(320);
   }
 }
 
 
-// ========================================
+// ======================================================
 // BOATS
-// ========================================
+// ======================================================
 
 function createBoatsForRow(row, direction, speed) {
+  const positions =
+    direction === 1
+      ? [-120, 220, 520]
+      : [650, 320, 20];
 
-  if (direction === 1) {
 
+  for (let position of positions) {
     boats.push({
       row: row,
-      x: -120,
-      width: 120,
-      height: 38,
-      speed: speed,
-      direction: direction
-    });
-
-    boats.push({
-      row: row,
-      x: 220,
-      width: 120,
-      height: 38,
-      speed: speed,
-      direction: direction
-    });
-
-    boats.push({
-      row: row,
-      x: 520,
-      width: 120,
-      height: 38,
-      speed: speed,
-      direction: direction
-    });
-
-  } else {
-
-    boats.push({
-      row: row,
-      x: 650,
-      width: 120,
-      height: 38,
-      speed: speed,
-      direction: direction
-    });
-
-    boats.push({
-      row: row,
-      x: 320,
-      width: 120,
-      height: 38,
-      speed: speed,
-      direction: direction
-    });
-
-    boats.push({
-      row: row,
-      x: 20,
+      x: position,
       width: 120,
       height: 38,
       speed: speed,
@@ -189,32 +222,28 @@ function createBoatsForRow(row, direction, speed) {
 }
 
 
-// ========================================
+// ======================================================
 // TRAIN TRACKS
-// ========================================
+// ======================================================
 
 function createTrainTrack(row) {
-
   const direction =
     Math.random() < 0.5
       ? 1
       : -1;
 
+
   trainTracks.push({
     row: row,
-
     direction: direction,
 
-    // Long train
     width: 900,
     height: 42,
 
     cycleLength: 9000,
 
-    // Warning happens before train
     warningTime: 2000,
 
-    // Long train moves across screen
     trainTime: 2600,
 
     timeOffset:
@@ -223,6 +252,7 @@ function createTrainTrack(row) {
     bellPlayed: false
   });
 
+
   rows.set(
     row,
     "track"
@@ -230,16 +260,15 @@ function createTrainTrack(row) {
 }
 
 
-// ========================================
+// ======================================================
 // STARTING WORLD
-// ========================================
+// ======================================================
 
-// Starting grass
 rows.set(11, "grass");
 rows.set(10, "grass");
 
 
-// First two-lane road
+// First 2-lane road
 rows.set(9, "road");
 rows.set(8, "road");
 
@@ -247,21 +276,21 @@ createCarsForRow(9, 1, 3);
 createCarsForRow(8, -1, 4);
 
 
-// Safe grass
+// Grass
 rows.set(7, "grass");
 
 
-// One-lane road
+// Single road
 rows.set(6, "road");
 
 createCarsForRow(6, 1, 4);
 
 
-// Safe grass
+// Grass
 rows.set(5, "grass");
 
 
-// Two-lane road
+// Two roads
 rows.set(4, "road");
 rows.set(3, "road");
 
@@ -269,7 +298,7 @@ createCarsForRow(4, -1, 3.5);
 createCarsForRow(3, 1, 4.5);
 
 
-// Safe grass
+// Grass
 rows.set(2, "grass");
 
 
@@ -285,10 +314,7 @@ createCarsForRow(0, -1, 4);
 rows.set(-1, "grass");
 
 
-// ========================================
-// FIRST RIVER
-// ========================================
-
+// River
 rows.set(-2, "water");
 rows.set(-3, "water");
 
@@ -300,10 +326,7 @@ createBoatsForRow(-3, -1, 2.5);
 rows.set(-4, "grass");
 
 
-// ========================================
-// MORE ROADS
-// ========================================
-
+// More roads
 rows.set(-5, "road");
 
 createCarsForRow(
@@ -311,6 +334,7 @@ createCarsForRow(
   1,
   3.5
 );
+
 
 rows.set(-6, "grass");
 
@@ -334,21 +358,15 @@ createCarsForRow(
 rows.set(-9, "grass");
 
 
-// ========================================
-// FIRST TRAIN TRACK
-// ========================================
-
+// Train
 createTrainTrack(-10);
 
 
-// Safe grass after train
+// Grass
 rows.set(-11, "grass");
 
 
-// ========================================
-// SECOND RIVER
-// ========================================
-
+// Second river
 rows.set(-12, "water");
 rows.set(-13, "water");
 
@@ -368,15 +386,14 @@ createBoatsForRow(
 rows.set(-14, "grass");
 
 
-// Endless generation starts here
 let nextRowToGenerate = -15;
 
 let roadLanesSinceRiver = 0;
 
 
-// ========================================
-// GENERATE MORE WORLD
-// ========================================
+// ======================================================
+// ENDLESS WORLD
+// ======================================================
 
 function generateMoreWorld(untilRow) {
 
@@ -384,15 +401,14 @@ function generateMoreWorld(untilRow) {
     nextRowToGenerate >= untilRow
   ) {
 
-    // ====================================
+    // ----------------------------
     // RIVER
-    // ====================================
+    // ----------------------------
 
     if (
       roadLanesSinceRiver >= 5
     ) {
 
-      // Grass before river
       rows.set(
         nextRowToGenerate,
         "grass"
@@ -401,7 +417,6 @@ function generateMoreWorld(untilRow) {
       nextRowToGenerate--;
 
 
-      // Water lane 1
       rows.set(
         nextRowToGenerate,
         "water"
@@ -416,7 +431,6 @@ function generateMoreWorld(untilRow) {
       nextRowToGenerate--;
 
 
-      // Water lane 2
       rows.set(
         nextRowToGenerate,
         "water"
@@ -431,7 +445,6 @@ function generateMoreWorld(untilRow) {
       nextRowToGenerate--;
 
 
-      // Grass after river
       rows.set(
         nextRowToGenerate,
         "grass"
@@ -446,15 +459,14 @@ function generateMoreWorld(untilRow) {
     }
 
 
-    // ====================================
-    // RANDOM TRAIN TRACK
-    // ====================================
+    // ----------------------------
+    // TRAIN
+    // ----------------------------
 
     if (
-      Math.random() < 0.18
+      Math.random() < 0.16
     ) {
 
-      // Grass before train
       rows.set(
         nextRowToGenerate,
         "grass"
@@ -463,7 +475,6 @@ function generateMoreWorld(untilRow) {
       nextRowToGenerate--;
 
 
-      // Train track
       createTrainTrack(
         nextRowToGenerate
       );
@@ -471,7 +482,6 @@ function generateMoreWorld(untilRow) {
       nextRowToGenerate--;
 
 
-      // Grass after train
       rows.set(
         nextRowToGenerate,
         "grass"
@@ -484,9 +494,9 @@ function generateMoreWorld(untilRow) {
     }
 
 
-    // ====================================
+    // ----------------------------
     // ROAD
-    // ====================================
+    // ----------------------------
 
     const roadLength =
       Math.random() < 0.5
@@ -532,7 +542,7 @@ function generateMoreWorld(untilRow) {
     }
 
 
-    // Grass safe area
+    // Grass always after road
     rows.set(
       nextRowToGenerate,
       "grass"
@@ -543,18 +553,16 @@ function generateMoreWorld(untilRow) {
 }
 
 
-// Generate plenty ahead
 generateMoreWorld(-45);
 
 
-// ========================================
+// ======================================================
 // BACKGROUND
-// ========================================
+// ======================================================
 
 function drawBackground() {
 
-  // Grass
-  ctx.fillStyle = "#7ac943";
+  ctx.fillStyle = "#8fcf55";
 
   ctx.fillRect(
     0,
@@ -564,9 +572,19 @@ function drawBackground() {
   );
 
 
+  // Draw far rows first
+  const orderedRows =
+    Array.from(
+      rows.entries()
+    ).sort(
+      (a, b) =>
+        a[0] - b[0]
+    );
+
+
   for (
     const [row, type]
-    of rows
+    of orderedRows
   ) {
 
     const y =
@@ -583,83 +601,129 @@ function drawBackground() {
     }
 
 
+    // ----------------------------
+    // GRASS
+    // ----------------------------
+
+    if (
+      type === "grass"
+    ) {
+
+      drawPerspectiveBand(
+        y,
+        tileSize,
+        "#7fc84a"
+      );
+
+
+      // Grass highlight
+      drawPerspectiveBand(
+        y,
+        4,
+        "#97db60"
+      );
+    }
+
+
+    // ----------------------------
     // ROAD
+    // ----------------------------
+
     if (
       type === "road"
     ) {
 
-      ctx.fillStyle = "#555";
-
-      ctx.fillRect(
-        0,
+      drawPerspectiveBand(
         y,
-        canvas.width,
-        tileSize
+        tileSize,
+        "#484848"
+      );
+
+
+      // Road edge
+      drawPerspectiveBand(
+        y,
+        3,
+        "#656565"
       );
     }
 
 
+    // ----------------------------
     // WATER
+    // ----------------------------
+
     if (
       type === "water"
     ) {
 
-      ctx.fillStyle = "#3399dd";
-
-      ctx.fillRect(
-        0,
+      drawPerspectiveBand(
         y,
-        canvas.width,
-        tileSize
+        tileSize,
+        "#2496d6"
       );
 
 
-      // Water lines
-      ctx.strokeStyle = "#73c8f2";
-      ctx.lineWidth = 2;
+      const scale =
+        getScale(
+          y + tileSize / 2
+        );
 
 
-      ctx.beginPath();
+      ctx.strokeStyle =
+        "#78d2ef";
 
-      ctx.moveTo(
-        0,
-        y + 15
-      );
-
-      ctx.lineTo(
-        canvas.width,
-        y + 15
-      );
-
-      ctx.stroke();
+      ctx.lineWidth =
+        2 * scale;
 
 
-      ctx.beginPath();
+      for (
+        let offset = 14;
+        offset <= 34;
+        offset += 20
+      ) {
 
-      ctx.moveTo(
-        0,
-        y + 35
-      );
+        const waterY =
+          y + offset;
 
-      ctx.lineTo(
-        canvas.width,
-        y + 35
-      );
 
-      ctx.stroke();
+        const left =
+          projectX(
+            0,
+            waterY
+          );
+
+        const right =
+          projectX(
+            canvas.width,
+            waterY
+          );
+
+
+        ctx.beginPath();
+
+        ctx.moveTo(
+          left,
+          waterY
+        );
+
+        ctx.lineTo(
+          right,
+          waterY
+        );
+
+        ctx.stroke();
+      }
     }
   }
 
 
-  // ====================================
-  // ROAD LANE LINES
-  // ====================================
-
-  ctx.strokeStyle = "white";
-  ctx.lineWidth = 3;
+  // ----------------------------
+  // ROAD DIVIDERS
+  // ----------------------------
 
   ctx.setLineDash(
-    [20, 20]
+    [16, 16]
   );
 
 
@@ -687,15 +751,36 @@ function drawBackground() {
         cameraOffset;
 
 
+      const left =
+        projectX(
+          0,
+          y
+        );
+
+      const right =
+        projectX(
+          canvas.width,
+          y
+        );
+
+
+      ctx.strokeStyle =
+        "white";
+
+      ctx.lineWidth =
+        2 *
+        getScale(y);
+
+
       ctx.beginPath();
 
       ctx.moveTo(
-        0,
+        left,
         y
       );
 
       ctx.lineTo(
-        canvas.width,
+        right,
         y
       );
 
@@ -708,9 +793,9 @@ function drawBackground() {
 }
 
 
-// ========================================
-// PLAYER SCREEN Y
-// ========================================
+// ======================================================
+// PLAYER POSITION
+// ======================================================
 
 function getPlayerScreenY() {
 
@@ -723,220 +808,366 @@ function getPlayerScreenY() {
 }
 
 
-// ========================================
-// DRAW CHICKEN
-// ========================================
+// ======================================================
+// 2.5D CHICKEN
+// ======================================================
 
 function drawPlayer() {
-
-  const x =
-    player.x;
 
   const y =
     getPlayerScreenY();
 
 
-  // Body
-  ctx.fillStyle = "white";
-
-  ctx.fillRect(
-    x + 8,
-    y + 12,
-    24,
-    20
-  );
+  const scale =
+    getScale(
+      y + 20
+    );
 
 
-  ctx.strokeStyle = "black";
-  ctx.lineWidth = 1;
-
-  ctx.strokeRect(
-    x + 8,
-    y + 12,
-    24,
-    20
-  );
+  const x =
+    projectX(
+      player.x,
+      y
+    );
 
 
-  // Head
+  const bodyWidth =
+    29 * scale;
+
+  const bodyHeight =
+    24 * scale;
+
+  const depth =
+    7 * scale;
+
+
+  // ----------------------------
+  // SHADOW
+  // ----------------------------
+
+  ctx.fillStyle =
+    "rgba(0, 0, 0, 0.20)";
+
+
   ctx.beginPath();
 
-  ctx.arc(
-    x + 20,
-    y + 10,
-    10,
+  ctx.ellipse(
+    x + 20 * scale,
+    y + 39 * scale,
+    19 * scale,
+    6 * scale,
+    0,
     0,
     Math.PI * 2
   );
 
-  ctx.fillStyle = "white";
   ctx.fill();
 
-  ctx.stroke();
+
+  // ----------------------------
+  // BODY FRONT
+  // ----------------------------
+
+  const bodyX =
+    x + 6 * scale;
+
+  const bodyY =
+    y + 13 * scale;
 
 
-  // Wing
-  ctx.fillStyle = "#eeeeee";
+  ctx.fillStyle =
+    "#f7f7f7";
 
   ctx.fillRect(
-    x + 10,
-    y + 18,
-    10,
-    8
+    bodyX,
+    bodyY,
+    bodyWidth,
+    bodyHeight
   );
 
 
-  // Beak
+  // Body side face
   ctx.beginPath();
 
   ctx.moveTo(
-    x + 28,
-    y + 10
+    bodyX + bodyWidth,
+    bodyY
   );
 
   ctx.lineTo(
-    x + 38,
-    y + 7
+    bodyX +
+    bodyWidth +
+    depth,
+    bodyY -
+    depth
   );
 
   ctx.lineTo(
-    x + 38,
-    y + 13
+    bodyX +
+    bodyWidth +
+    depth,
+    bodyY +
+    bodyHeight -
+    depth
+  );
+
+  ctx.lineTo(
+    bodyX + bodyWidth,
+    bodyY + bodyHeight
   );
 
   ctx.closePath();
 
-  ctx.fillStyle = "orange";
+  ctx.fillStyle =
+    "#d8d8d8";
 
   ctx.fill();
 
-  ctx.strokeStyle = "black";
-  ctx.stroke();
 
-
-  // Comb
-  ctx.fillStyle = "red";
-
-
+  // Body top face
   ctx.beginPath();
-  ctx.arc(
-    x + 14,
-    y + 1,
-    3,
-    0,
-    Math.PI * 2
+
+  ctx.moveTo(
+    bodyX,
+    bodyY
   );
+
+  ctx.lineTo(
+    bodyX + depth,
+    bodyY - depth
+  );
+
+  ctx.lineTo(
+    bodyX +
+    bodyWidth +
+    depth,
+    bodyY - depth
+  );
+
+  ctx.lineTo(
+    bodyX + bodyWidth,
+    bodyY
+  );
+
+  ctx.closePath();
+
+  ctx.fillStyle =
+    "#ffffff";
+
   ctx.fill();
 
 
-  ctx.beginPath();
-  ctx.arc(
-    x + 20,
-    y - 1,
-    3,
-    0,
-    Math.PI * 2
+  // ----------------------------
+  // HEAD
+  // ----------------------------
+
+  const headSize =
+    20 * scale;
+
+  const headX =
+    x + 11 * scale;
+
+  const headY =
+    y;
+
+
+  ctx.fillStyle =
+    "#fafafa";
+
+  ctx.fillRect(
+    headX,
+    headY,
+    headSize,
+    headSize
   );
+
+
+  // Head side
+  ctx.beginPath();
+
+  ctx.moveTo(
+    headX + headSize,
+    headY
+  );
+
+  ctx.lineTo(
+    headX +
+    headSize +
+    depth,
+    headY -
+    depth
+  );
+
+  ctx.lineTo(
+    headX +
+    headSize +
+    depth,
+    headY +
+    headSize -
+    depth
+  );
+
+  ctx.lineTo(
+    headX + headSize,
+    headY + headSize
+  );
+
+  ctx.closePath();
+
+  ctx.fillStyle =
+    "#dddddd";
+
   ctx.fill();
 
 
+  // Head top
   ctx.beginPath();
-  ctx.arc(
-    x + 26,
-    y + 1,
-    3,
-    0,
-    Math.PI * 2
+
+  ctx.moveTo(
+    headX,
+    headY
   );
+
+  ctx.lineTo(
+    headX + depth,
+    headY - depth
+  );
+
+  ctx.lineTo(
+    headX +
+    headSize +
+    depth,
+    headY - depth
+  );
+
+  ctx.lineTo(
+    headX + headSize,
+    headY
+  );
+
+  ctx.closePath();
+
+  ctx.fillStyle =
+    "#ffffff";
+
   ctx.fill();
 
 
   // Eye
-  ctx.beginPath();
+  ctx.fillStyle =
+    "#111";
 
-  ctx.arc(
-    x + 23,
-    y + 8,
-    1.5,
-    0,
-    Math.PI * 2
+  ctx.fillRect(
+    headX +
+    13 * scale,
+    headY +
+    6 * scale,
+    3 * scale,
+    3 * scale
   );
 
-  ctx.fillStyle = "black";
+
+  // Beak
+  ctx.fillStyle =
+    "#f4a020";
+
+  ctx.beginPath();
+
+  ctx.moveTo(
+    headX +
+    headSize +
+    depth,
+    headY +
+    8 * scale
+  );
+
+  ctx.lineTo(
+    headX +
+    headSize +
+    15 * scale,
+    headY +
+    11 * scale
+  );
+
+  ctx.lineTo(
+    headX +
+    headSize +
+    depth,
+    headY +
+    14 * scale
+  );
+
+  ctx.closePath();
 
   ctx.fill();
 
 
+  // Comb
+  ctx.fillStyle =
+    "#d92727";
+
+  for (
+    let i = 0;
+    i < 3;
+    i++
+  ) {
+
+    ctx.fillRect(
+      headX +
+      (3 + i * 6) *
+      scale,
+
+      headY -
+      (6 + i % 2 * 2) *
+      scale,
+
+      5 * scale,
+      7 * scale
+    );
+  }
+
+
+  // Wing
+  ctx.fillStyle =
+    "#e1e1e1";
+
+  ctx.fillRect(
+    bodyX +
+    5 * scale,
+    bodyY +
+    6 * scale,
+    12 * scale,
+    10 * scale
+  );
+
+
   // Legs
-  ctx.strokeStyle = "orange";
-  ctx.lineWidth = 2;
+  ctx.fillStyle =
+    "#e79019";
 
-
-  ctx.beginPath();
-
-  ctx.moveTo(
-    x + 15,
-    y + 32
+  ctx.fillRect(
+    bodyX +
+    7 * scale,
+    bodyY +
+    bodyHeight,
+    3 * scale,
+    7 * scale
   );
 
-  ctx.lineTo(
-    x + 15,
-    y + 39
+  ctx.fillRect(
+    bodyX +
+    20 * scale,
+    bodyY +
+    bodyHeight,
+    3 * scale,
+    7 * scale
   );
-
-  ctx.stroke();
-
-
-  ctx.beginPath();
-
-  ctx.moveTo(
-    x + 25,
-    y + 32
-  );
-
-  ctx.lineTo(
-    x + 25,
-    y + 39
-  );
-
-  ctx.stroke();
-
-
-  // Feet
-  ctx.beginPath();
-
-  ctx.moveTo(
-    x + 11,
-    y + 39
-  );
-
-  ctx.lineTo(
-    x + 18,
-    y + 39
-  );
-
-  ctx.stroke();
-
-
-  ctx.beginPath();
-
-  ctx.moveTo(
-    x + 22,
-    y + 39
-  );
-
-  ctx.lineTo(
-    x + 29,
-    y + 39
-  );
-
-  ctx.stroke();
 }
 
 
-// ========================================
-// DRAW VEHICLES
-// ========================================
+// ======================================================
+// 2.5D VEHICLES
+// ======================================================
 
 function drawCars() {
 
@@ -948,229 +1179,248 @@ function drawCars() {
       car.row *
       tileSize +
       cameraOffset +
-      7;
+      8;
 
 
     if (
-      y < -50 ||
-      y > canvas.height + 50
+      y < -60 ||
+      y >
+      canvas.height + 60
     ) {
       continue;
     }
 
 
-    // ==========================
-    // CAR
-    // ==========================
+    const scale =
+      getScale(y);
 
-    if (
-      car.type === "car"
-    ) {
 
-      ctx.fillStyle =
-        car.color;
-
-      ctx.fillRect(
+    const x =
+      projectX(
         car.x,
-        y + 7,
-        car.width,
+        y
+      );
+
+
+    const width =
+      car.width *
+      scale;
+
+
+    const height =
+      24 * scale;
+
+
+    const depth =
+      8 * scale;
+
+
+    // Shadow
+    ctx.fillStyle =
+      "rgba(0,0,0,0.22)";
+
+    ctx.fillRect(
+      x + 4 * scale,
+      y + 23 * scale,
+      width,
+      7 * scale
+    );
+
+
+    // Main front body
+    ctx.fillStyle =
+      car.color;
+
+    ctx.fillRect(
+      x,
+      y + 6 * scale,
+      width,
+      height
+    );
+
+
+    // Top face
+    ctx.beginPath();
+
+    ctx.moveTo(
+      x,
+      y + 6 * scale
+    );
+
+    ctx.lineTo(
+      x + depth,
+      y - depth + 6 * scale
+    );
+
+    ctx.lineTo(
+      x + width + depth,
+      y - depth + 6 * scale
+    );
+
+    ctx.lineTo(
+      x + width,
+      y + 6 * scale
+    );
+
+    ctx.closePath();
+
+    ctx.fillStyle =
+      lightenColor(
+        car.color,
         25
       );
 
+    ctx.fill();
 
-      ctx.fillRect(
-        car.x + 20,
-        y,
-        car.width - 40,
-        15
+
+    // Side face
+    ctx.beginPath();
+
+    ctx.moveTo(
+      x + width,
+      y + 6 * scale
+    );
+
+    ctx.lineTo(
+      x + width + depth,
+      y - depth + 6 * scale
+    );
+
+    ctx.lineTo(
+      x + width + depth,
+      y + height -
+      depth +
+      6 * scale
+    );
+
+    ctx.lineTo(
+      x + width,
+      y + height +
+      6 * scale
+    );
+
+    ctx.closePath();
+
+    ctx.fillStyle =
+      darkenColor(
+        car.color,
+        35
       );
 
+    ctx.fill();
+
+
+    // Roof / cab
+    if (
+      car.type !== "truck"
+    ) {
 
       ctx.fillStyle =
-        "lightblue";
+        car.type === "taxi"
+          ? "#f8cf29"
+          : lightenColor(
+              car.color,
+              10
+            );
+
 
       ctx.fillRect(
-        car.x + 25,
-        y + 3,
-        15,
-        10
+        x + 18 * scale,
+        y,
+        Math.max(
+          25 * scale,
+          width - 38 * scale
+        ),
+        12 * scale
       );
 
+
+      // Windows
+      ctx.fillStyle =
+        "#8fd5e8";
+
       ctx.fillRect(
-        car.x + 45,
-        y + 3,
-        15,
-        10
+        x + 23 * scale,
+        y + 2 * scale,
+        17 * scale,
+        8 * scale
+      );
+
+
+      ctx.fillRect(
+        x +
+        width -
+        38 * scale,
+        y + 2 * scale,
+        17 * scale,
+        8 * scale
       );
     }
 
 
-    // ==========================
-    // TRUCK
-    // ==========================
-
+    // Truck
     if (
       car.type === "truck"
     ) {
 
       ctx.fillStyle =
-        car.color;
+        "#d9d9d9";
 
       ctx.fillRect(
-        car.x,
-        y + 5,
-        75,
-        27
+        x +
+        width -
+        33 * scale,
+        y + 7 * scale,
+        33 * scale,
+        23 * scale
       );
 
 
       ctx.fillStyle =
-        "#dddddd";
+        "#8fd5e8";
 
       ctx.fillRect(
-        car.x + 75,
-        y + 10,
-        35,
-        22
-      );
-
-
-      ctx.fillStyle =
-        "lightblue";
-
-      ctx.fillRect(
-        car.x + 82,
-        y + 13,
-        18,
-        10
+        x +
+        width -
+        27 * scale,
+        y + 10 * scale,
+        17 * scale,
+        9 * scale
       );
     }
 
 
-    // ==========================
-    // TAXI
-    // ==========================
-
+    // Taxi sign
     if (
       car.type === "taxi"
     ) {
 
       ctx.fillStyle =
-        "gold";
-
-      ctx.fillRect(
-        car.x,
-        y + 7,
-        car.width,
-        25
-      );
-
-
-      ctx.fillRect(
-        car.x + 20,
-        y,
-        car.width - 40,
-        15
-      );
-
-
-      ctx.fillStyle =
-        "lightblue";
-
-      ctx.fillRect(
-        car.x + 25,
-        y + 3,
-        15,
-        10
-      );
-
-      ctx.fillRect(
-        car.x + 45,
-        y + 3,
-        15,
-        10
-      );
-
-
-      ctx.fillStyle =
         "white";
 
       ctx.fillRect(
-        car.x + 32,
-        y - 5,
-        20,
-        7
-      );
-
-
-      ctx.fillStyle =
-        "black";
-
-      ctx.font =
-        "6px Arial";
-
-      ctx.fillText(
-        "TAXI",
-        car.x + 34,
-        y
-      );
-    }
-
-
-    // ==========================
-    // VAN
-    // ==========================
-
-    if (
-      car.type === "van"
-    ) {
-
-      ctx.fillStyle =
-        car.color;
-
-      ctx.fillRect(
-        car.x,
-        y + 2,
-        car.width,
-        30
-      );
-
-
-      ctx.fillStyle =
-        "lightblue";
-
-      ctx.fillRect(
-        car.x + 15,
-        y + 7,
-        25,
-        12
-      );
-
-
-      ctx.fillRect(
-        car.x +
-        car.width -
-        30,
-
-        y + 7,
-
-        20,
-        12
+        x +
+        width / 2 -
+        10 * scale,
+        y -
+        5 * scale,
+        20 * scale,
+        6 * scale
       );
     }
 
 
     // Wheels
     ctx.fillStyle =
-      "black";
+      "#181818";
 
 
     ctx.beginPath();
 
     ctx.arc(
-      car.x + 18,
-      y + 33,
-      5,
+      x + 17 * scale,
+      y + 31 * scale,
+      5 * scale,
       0,
       Math.PI * 2
     );
@@ -1181,13 +1431,11 @@ function drawCars() {
     ctx.beginPath();
 
     ctx.arc(
-      car.x +
-      car.width -
-      18,
-
-      y + 33,
-
-      5,
+      x +
+      width -
+      17 * scale,
+      y + 31 * scale,
+      5 * scale,
       0,
       Math.PI * 2
     );
@@ -1197,9 +1445,123 @@ function drawCars() {
 }
 
 
-// ========================================
-// MOVE VEHICLES
-// ========================================
+// ======================================================
+// COLOR HELPERS
+// ======================================================
+
+function lightenColor(color, amount) {
+  return adjustColor(
+    color,
+    amount
+  );
+}
+
+
+function darkenColor(color, amount) {
+  return adjustColor(
+    color,
+    -amount
+  );
+}
+
+
+function adjustColor(color, amount) {
+
+  if (
+    !color.startsWith("#")
+  ) {
+    return color;
+  }
+
+
+  let value =
+    color.substring(1);
+
+
+  if (
+    value.length === 3
+  ) {
+
+    value =
+      value
+        .split("")
+        .map(
+          letter =>
+            letter + letter
+        )
+        .join("");
+  }
+
+
+  let number =
+    parseInt(
+      value,
+      16
+    );
+
+
+  let red =
+    (number >> 16) +
+    amount;
+
+
+  let green =
+    ((number >> 8) & 0x00ff) +
+    amount;
+
+
+  let blue =
+    (number & 0x0000ff) +
+    amount;
+
+
+  red =
+    Math.max(
+      0,
+      Math.min(
+        255,
+        red
+      )
+    );
+
+
+  green =
+    Math.max(
+      0,
+      Math.min(
+        255,
+        green
+      )
+    );
+
+
+  blue =
+    Math.max(
+      0,
+      Math.min(
+        255,
+        blue
+      )
+    );
+
+
+  return (
+    "#" +
+    (
+      (1 << 24) +
+      (red << 16) +
+      (green << 8) +
+      blue
+    )
+      .toString(16)
+      .slice(1)
+  );
+}
+
+
+// ======================================================
+// MOVE CARS
+// ======================================================
 
 function moveCars() {
 
@@ -1236,9 +1598,9 @@ function moveCars() {
 }
 
 
-// ========================================
-// DRAW BOATS
-// ========================================
+// ======================================================
+// 2.5D BOATS
+// ======================================================
 
 function drawBoats() {
 
@@ -1250,112 +1612,146 @@ function drawBoats() {
       boat.row *
       tileSize +
       cameraOffset +
-      6;
+      8;
 
 
     if (
-      y < -50 ||
+      y < -60 ||
       y >
-      canvas.height + 50
+      canvas.height + 60
     ) {
       continue;
     }
 
 
-    // Main boat
+    const scale =
+      getScale(y);
+
+
+    const x =
+      projectX(
+        boat.x,
+        y
+      );
+
+
+    const width =
+      boat.width *
+      scale;
+
+
+    const height =
+      22 * scale;
+
+
+    const depth =
+      7 * scale;
+
+
+    // Shadow
     ctx.fillStyle =
-      "#8B4513";
+      "rgba(0,0,0,0.15)";
 
     ctx.fillRect(
-      boat.x,
-      y + 10,
-      boat.width,
-      24
+      x,
+      y + 27 * scale,
+      width,
+      5 * scale
     );
 
 
-    // Pointed front
+    // Boat front
+    ctx.fillStyle =
+      "#7a421e";
+
+    ctx.fillRect(
+      x,
+      y + 8 * scale,
+      width,
+      height
+    );
+
+
+    // Top face
     ctx.beginPath();
 
+    ctx.moveTo(
+      x,
+      y + 8 * scale
+    );
 
-    if (
-      boat.direction === 1
-    ) {
+    ctx.lineTo(
+      x + depth,
+      y
+    );
 
-      ctx.moveTo(
-        boat.x +
-        boat.width,
-        y + 10
-      );
+    ctx.lineTo(
+      x + width + depth,
+      y
+    );
 
-      ctx.lineTo(
-        boat.x +
-        boat.width +
-        15,
-        y + 22
-      );
-
-      ctx.lineTo(
-        boat.x +
-        boat.width,
-        y + 34
-      );
-
-    } else {
-
-      ctx.moveTo(
-        boat.x,
-        y + 10
-      );
-
-      ctx.lineTo(
-        boat.x - 15,
-        y + 22
-      );
-
-      ctx.lineTo(
-        boat.x,
-        y + 34
-      );
-    }
-
+    ctx.lineTo(
+      x + width,
+      y + 8 * scale
+    );
 
     ctx.closePath();
+
+    ctx.fillStyle =
+      "#b96f34";
 
     ctx.fill();
 
 
-    // Interior
-    ctx.fillStyle =
-      "#c68642";
+    // Side
+    ctx.beginPath();
 
-    ctx.fillRect(
-      boat.x + 15,
-      y + 14,
-      boat.width - 30,
-      14
+    ctx.moveTo(
+      x + width,
+      y + 8 * scale
     );
 
+    ctx.lineTo(
+      x + width + depth,
+      y
+    );
 
-    // Outline
-    ctx.strokeStyle =
-      "#4a260b";
+    ctx.lineTo(
+      x + width + depth,
+      y + 18 * scale
+    );
 
-    ctx.lineWidth = 2;
+    ctx.lineTo(
+      x + width,
+      y + 30 * scale
+    );
 
-    ctx.strokeRect(
-      boat.x,
-      y + 10,
-      boat.width,
-      24
+    ctx.closePath();
+
+    ctx.fillStyle =
+      "#542a11";
+
+    ctx.fill();
+
+
+    // Inside
+    ctx.fillStyle =
+      "#d99a58";
+
+    ctx.fillRect(
+      x + 15 * scale,
+      y + 9 * scale,
+      width -
+      30 * scale,
+      10 * scale
     );
   }
 }
 
 
-// ========================================
+// ======================================================
 // MOVE BOATS
-// ========================================
+// ======================================================
 
 function moveBoats() {
 
@@ -1393,9 +1789,9 @@ function moveBoats() {
 }
 
 
-// ========================================
-// DRAW TRAIN TRACKS
-// ========================================
+// ======================================================
+// 2.5D TRAIN TRACKS
+// ======================================================
 
 function drawTrainTracks() {
 
@@ -1418,232 +1814,250 @@ function drawTrainTracks() {
     }
 
 
-    // Gravel base
-    ctx.fillStyle =
-      "#737373";
-
-    ctx.fillRect(
-      0,
+    // Gravel
+    drawPerspectiveBand(
       y,
-      canvas.width,
-      tileSize
+      tileSize,
+      "#747474"
     );
 
 
-    // Gravel stones
-    ctx.fillStyle =
-      "#929292";
-
+    // Wooden ties
     for (
-      let x = 0;
-      x <
+      let worldX = 0;
+      worldX <
       canvas.width;
-      x += 18
+      worldX += 28
     ) {
+
+      const scale =
+        getScale(
+          y + 25
+        );
+
+
+      const x =
+        projectX(
+          worldX,
+          y + 25
+        );
+
+
+      ctx.fillStyle =
+        "#62401f";
+
 
       ctx.fillRect(
         x,
-        y + 4,
-        7,
-        4
-      );
-
-      ctx.fillRect(
-        x + 8,
-        y + 41,
-        7,
-        4
+        y + 7 * scale,
+        11 * scale,
+        35 * scale
       );
     }
 
 
-    // Wooden railroad ties
-    ctx.fillStyle =
-      "#63401f";
+    // Rails
+    const railY1 =
+      y + 14;
 
-    for (
-      let x = -5;
-      x <
-      canvas.width;
-      x += 27
-    ) {
-
-      ctx.fillRect(
-        x,
-        y + 6,
-        13,
-        38
-      );
-    }
+    const railY2 =
+      y + 34;
 
 
-    // Dark underside of rails
-    ctx.fillStyle =
-      "#444";
+    ctx.strokeStyle =
+      "#d6d6d6";
 
-    ctx.fillRect(
-      0,
-      y + 13,
-      canvas.width,
-      7
-    );
+    ctx.lineWidth =
+      5 *
+      getScale(y);
 
-    ctx.fillRect(
-      0,
-      y + 32,
-      canvas.width,
-      7
-    );
-
-
-    // Silver rails
-    ctx.fillStyle =
-      "#d9d9d9";
-
-    ctx.fillRect(
-      0,
-      y + 12,
-      canvas.width,
-      4
-    );
-
-    ctx.fillRect(
-      0,
-      y + 31,
-      canvas.width,
-      4
-    );
-
-
-    // ====================================
-    // SIGNAL TIMING
-    // ====================================
-
-    const cycleTime =
-      (
-        performance.now() +
-        track.timeOffset
-      ) %
-      track.cycleLength;
-
-
-    const warningStart =
-      track.cycleLength -
-      track.warningTime;
-
-
-    const warning =
-      cycleTime >=
-      warningStart;
-
-
-    // ====================================
-    // CROSSING SIGNAL
-    // ====================================
-
-    // Pole
-    ctx.fillStyle =
-      "#333";
-
-    ctx.fillRect(
-      18,
-      y - 42,
-      6,
-      48
-    );
-
-
-    // Signal housing
-    ctx.fillStyle =
-      "#111";
-
-    ctx.fillRect(
-      3,
-      y - 43,
-      36,
-      22
-    );
-
-
-    const flashing =
-      Math.floor(
-        performance.now() /
-        250
-      ) %
-      2 === 0;
-
-
-    // Left red light
-    ctx.beginPath();
-
-    ctx.arc(
-      13,
-      y - 32,
-      7,
-      0,
-      Math.PI * 2
-    );
-
-    ctx.fillStyle =
-      warning &&
-      flashing
-        ? "red"
-        : "#520000";
-
-    ctx.fill();
-
-
-    // Right red light
-    ctx.beginPath();
-
-    ctx.arc(
-      29,
-      y - 32,
-      7,
-      0,
-      Math.PI * 2
-    );
-
-    ctx.fillStyle =
-      warning &&
-      !flashing
-        ? "red"
-        : "#520000";
-
-    ctx.fill();
-
-
-    // Bell
-    ctx.fillStyle =
-      "#d4af37";
 
     ctx.beginPath();
 
-    ctx.arc(
-      21,
-      y - 52,
-      9,
-      0,
-      Math.PI * 2
+    ctx.moveTo(
+      projectX(
+        0,
+        railY1
+      ),
+      railY1
     );
 
-    ctx.fill();
+    ctx.lineTo(
+      projectX(
+        canvas.width,
+        railY1
+      ),
+      railY1
+    );
+
+    ctx.stroke();
 
 
-    // Bell bottom
-    ctx.fillRect(
-      17,
-      y - 46,
-      8,
-      6
+    ctx.beginPath();
+
+    ctx.moveTo(
+      projectX(
+        0,
+        railY2
+      ),
+      railY2
+    );
+
+    ctx.lineTo(
+      projectX(
+        canvas.width,
+        railY2
+      ),
+      railY2
+    );
+
+    ctx.stroke();
+
+
+    drawTrainSignal(
+      track,
+      y
     );
   }
 }
 
 
-// ========================================
+// ======================================================
+// TRAIN SIGNAL
+// ======================================================
+
+function drawTrainSignal(track, y) {
+
+  const scale =
+    getScale(y);
+
+
+  const x =
+    projectX(
+      38,
+      y
+    );
+
+
+  const cycleTime =
+    (
+      performance.now() +
+      track.timeOffset
+    ) %
+    track.cycleLength;
+
+
+  const warningStart =
+    track.cycleLength -
+    track.warningTime;
+
+
+  const warning =
+    cycleTime >=
+    warningStart;
+
+
+  // Pole
+  ctx.fillStyle =
+    "#333";
+
+  ctx.fillRect(
+    x,
+    y -
+    42 * scale,
+    6 * scale,
+    47 * scale
+  );
+
+
+  // Signal box
+  ctx.fillStyle =
+    "#171717";
+
+  ctx.fillRect(
+    x -
+    14 * scale,
+    y -
+    43 * scale,
+    36 * scale,
+    21 * scale
+  );
+
+
+  const flashing =
+    Math.floor(
+      performance.now() /
+      250
+    ) %
+    2 === 0;
+
+
+  // Light 1
+  ctx.beginPath();
+
+  ctx.arc(
+    x -
+    5 * scale,
+    y -
+    32 * scale,
+    6 * scale,
+    0,
+    Math.PI * 2
+  );
+
+  ctx.fillStyle =
+    warning &&
+    flashing
+      ? "#ff1e1e"
+      : "#520000";
+
+  ctx.fill();
+
+
+  // Light 2
+  ctx.beginPath();
+
+  ctx.arc(
+    x +
+    12 * scale,
+    y -
+    32 * scale,
+    6 * scale,
+    0,
+    Math.PI * 2
+  );
+
+  ctx.fillStyle =
+    warning &&
+    !flashing
+      ? "#ff1e1e"
+      : "#520000";
+
+  ctx.fill();
+
+
+  // Bell
+  ctx.fillStyle =
+    "#d6af3b";
+
+  ctx.beginPath();
+
+  ctx.arc(
+    x + 3 * scale,
+    y -
+    52 * scale,
+    8 * scale,
+    0,
+    Math.PI * 2
+  );
+
+  ctx.fill();
+}
+
+
+// ======================================================
 // TRAIN BELL
-// ========================================
+// ======================================================
 
 function playTrainBell() {
 
@@ -1672,6 +2086,7 @@ function playTrainBell() {
       gain
     );
 
+
     gain.connect(
       audioContext.destination
     );
@@ -1680,23 +2095,22 @@ function playTrainBell() {
     oscillator.frequency.value =
       700;
 
+
     oscillator.type =
       "sine";
 
 
-    gain.gain
-      .setValueAtTime(
-        0.12,
-        audioContext.currentTime
-      );
+    gain.gain.setValueAtTime(
+      0.12,
+      audioContext.currentTime
+    );
 
 
-    gain.gain
-      .exponentialRampToValueAtTime(
-        0.001,
-        audioContext.currentTime +
-        0.25
-      );
+    gain.gain.exponentialRampToValueAtTime(
+      0.001,
+      audioContext.currentTime +
+      0.25
+    );
 
 
     oscillator.start();
@@ -1709,14 +2123,14 @@ function playTrainBell() {
 
   } catch (error) {
 
-    // Ignore blocked browser audio
+    // Game continues
   }
 }
 
 
-// ========================================
-// DRAW + MOVE TRAIN
-// ========================================
+// ======================================================
+// 2.5D TRAIN
+// ======================================================
 
 function updateAndDrawTrains() {
 
@@ -1729,7 +2143,7 @@ function updateAndDrawTrains() {
       track.row *
       tileSize +
       cameraOffset +
-      2;
+      3;
 
 
     const cycleTime =
@@ -1745,10 +2159,7 @@ function updateAndDrawTrains() {
       track.warningTime;
 
 
-    // ====================================
-    // WARNING
-    // ====================================
-
+    // Warning
     if (
       cycleTime >=
       warningStart
@@ -1772,10 +2183,6 @@ function updateAndDrawTrains() {
     track.bellPlayed =
       false;
 
-
-    // ====================================
-    // TRAIN PERIOD
-    // ====================================
 
     if (
       cycleTime >
@@ -1823,348 +2230,14 @@ function updateAndDrawTrains() {
     }
 
 
-    // ====================================
-    // ENGINE
-    // ====================================
-
-    const engineWidth =
-      130;
-
-
-    const engineX =
-      track.direction === 1
-        ? trainX +
-          fullTrainWidth -
-          engineWidth
-        : trainX;
-
-
-    // Engine body
-    ctx.fillStyle =
-      "#202020";
-
-    ctx.fillRect(
-      engineX,
-      y + 5,
-      engineWidth,
-      36
-    );
-
-
-    // Engine roof
-    ctx.fillStyle =
-      "#383838";
-
-    ctx.fillRect(
-      engineX + 25,
+    drawLongTrain(
+      trainX,
       y,
-      75,
-      12
+      track.direction
     );
 
 
-    // Red stripe
-    ctx.fillStyle =
-      "#b22222";
-
-    ctx.fillRect(
-      engineX,
-      y + 29,
-      engineWidth,
-      6
-    );
-
-
-    // Engine cab
-    ctx.fillStyle =
-      "#454545";
-
-
-    if (
-      track.direction === 1
-    ) {
-
-      ctx.fillRect(
-        engineX + 90,
-        y + 7,
-        40,
-        31
-      );
-
-    } else {
-
-      ctx.fillRect(
-        engineX,
-        y + 7,
-        40,
-        31
-      );
-    }
-
-
-    // Cab window
-    ctx.fillStyle =
-      "#8fd8ff";
-
-
-    if (
-      track.direction === 1
-    ) {
-
-      ctx.fillRect(
-        engineX + 99,
-        y + 12,
-        20,
-        12
-      );
-
-    } else {
-
-      ctx.fillRect(
-        engineX + 10,
-        y + 12,
-        20,
-        12
-      );
-    }
-
-
-    // Headlight
-    ctx.fillStyle =
-      "yellow";
-
-
-    if (
-      track.direction === 1
-    ) {
-
-      ctx.fillRect(
-        engineX +
-        engineWidth -
-        5,
-
-        y + 18,
-
-        5,
-        8
-      );
-
-    } else {
-
-      ctx.fillRect(
-        engineX,
-        y + 18,
-        5,
-        8
-      );
-    }
-
-
-    // Engine wheels
-    ctx.fillStyle =
-      "black";
-
-
-    ctx.beginPath();
-
-    ctx.arc(
-      engineX + 24,
-      y + 42,
-      6,
-      0,
-      Math.PI * 2
-    );
-
-    ctx.fill();
-
-
-    ctx.beginPath();
-
-    ctx.arc(
-      engineX +
-      engineWidth -
-      24,
-
-      y + 42,
-
-      6,
-      0,
-      Math.PI * 2
-    );
-
-    ctx.fill();
-
-
-    // ====================================
-    // TRAIN CARS
-    // ====================================
-
-    const carWidth =
-      120;
-
-    const gap =
-      8;
-
-    const numberOfCars =
-      6;
-
-
-    for (
-      let i = 0;
-      i < numberOfCars;
-      i++
-    ) {
-
-      let carX;
-
-
-      if (
-        track.direction === 1
-      ) {
-
-        carX =
-          engineX -
-          gap -
-          carWidth -
-          i *
-          (
-            carWidth +
-            gap
-          );
-
-      } else {
-
-        carX =
-          engineX +
-          engineWidth +
-          gap +
-          i *
-          (
-            carWidth +
-            gap
-          );
-      }
-
-
-      // Train car
-      ctx.fillStyle =
-        i % 2 === 0
-          ? "#303030"
-          : "#3b3b3b";
-
-
-      ctx.fillRect(
-        carX,
-        y + 7,
-        carWidth,
-        34
-      );
-
-
-      // Red stripe
-      ctx.fillStyle =
-        "#8b0000";
-
-      ctx.fillRect(
-        carX,
-        y + 30,
-        carWidth,
-        5
-      );
-
-
-      // Windows
-      ctx.fillStyle =
-        "#8fd8ff";
-
-
-      for (
-        let w = 12;
-        w <
-        carWidth - 15;
-        w += 28
-      ) {
-
-        ctx.fillRect(
-          carX + w,
-          y + 13,
-          18,
-          10
-        );
-      }
-
-
-      // Connector
-      ctx.fillStyle =
-        "#111";
-
-
-      if (
-        track.direction === 1
-      ) {
-
-        ctx.fillRect(
-          carX +
-          carWidth,
-
-          y + 21,
-
-          gap,
-
-          5
-        );
-
-      } else {
-
-        ctx.fillRect(
-          carX - gap,
-          y + 21,
-          gap,
-          5
-        );
-      }
-
-
-      // Wheels
-      ctx.fillStyle =
-        "black";
-
-
-      ctx.beginPath();
-
-      ctx.arc(
-        carX + 20,
-        y + 42,
-        5,
-        0,
-        Math.PI * 2
-      );
-
-      ctx.fill();
-
-
-      ctx.beginPath();
-
-      ctx.arc(
-        carX +
-        carWidth -
-        20,
-
-        y + 42,
-
-        5,
-        0,
-        Math.PI * 2
-      );
-
-      ctx.fill();
-    }
-
-
-    // ====================================
-    // COLLISION
-    // ====================================
-
+    // Collision stays logical
     if (
       player.row ===
       track.row
@@ -2193,9 +2266,422 @@ function updateAndDrawTrains() {
 }
 
 
-// ========================================
+// ======================================================
+// DRAW LONG 2.5D TRAIN
+// ======================================================
+
+function drawLongTrain(
+  worldTrainX,
+  y,
+  direction
+) {
+
+  const scale =
+    getScale(y);
+
+
+  const engineWidth =
+    130;
+
+
+  const fullTrainWidth =
+    900;
+
+
+  const engineWorldX =
+    direction === 1
+      ? worldTrainX +
+        fullTrainWidth -
+        engineWidth
+      : worldTrainX;
+
+
+  drawTrainEngine(
+    engineWorldX,
+    y,
+    direction,
+    scale
+  );
+
+
+  const trainCarWidth =
+    120;
+
+  const gap =
+    8;
+
+
+  for (
+    let i = 0;
+    i < 6;
+    i++
+  ) {
+
+    let carWorldX;
+
+
+    if (
+      direction === 1
+    ) {
+
+      carWorldX =
+        engineWorldX -
+        gap -
+        trainCarWidth -
+        i *
+        (
+          trainCarWidth +
+          gap
+        );
+
+    } else {
+
+      carWorldX =
+        engineWorldX +
+        engineWidth +
+        gap +
+        i *
+        (
+          trainCarWidth +
+          gap
+        );
+    }
+
+
+    drawTrainCar(
+      carWorldX,
+      y,
+      trainCarWidth,
+      scale,
+      i
+    );
+  }
+}
+
+
+// ======================================================
+// TRAIN ENGINE
+// ======================================================
+
+function drawTrainEngine(
+  worldX,
+  y,
+  direction,
+  scale
+) {
+
+  const x =
+    projectX(
+      worldX,
+      y
+    );
+
+
+  const width =
+    130 * scale;
+
+
+  const height =
+    35 * scale;
+
+
+  const depth =
+    9 * scale;
+
+
+  // Shadow
+  ctx.fillStyle =
+    "rgba(0,0,0,0.25)";
+
+  ctx.fillRect(
+    x,
+    y + 35 * scale,
+    width,
+    6 * scale
+  );
+
+
+  // Body
+  ctx.fillStyle =
+    "#252525";
+
+  ctx.fillRect(
+    x,
+    y + 6 * scale,
+    width,
+    height
+  );
+
+
+  // Top
+  ctx.beginPath();
+
+  ctx.moveTo(
+    x,
+    y + 6 * scale
+  );
+
+  ctx.lineTo(
+    x + depth,
+    y - depth +
+    6 * scale
+  );
+
+  ctx.lineTo(
+    x + width + depth,
+    y - depth +
+    6 * scale
+  );
+
+  ctx.lineTo(
+    x + width,
+    y + 6 * scale
+  );
+
+  ctx.closePath();
+
+  ctx.fillStyle =
+    "#4a4a4a";
+
+  ctx.fill();
+
+
+  // Side
+  ctx.beginPath();
+
+  ctx.moveTo(
+    x + width,
+    y + 6 * scale
+  );
+
+  ctx.lineTo(
+    x + width + depth,
+    y - depth +
+    6 * scale
+  );
+
+  ctx.lineTo(
+    x + width + depth,
+    y + 29 * scale
+  );
+
+  ctx.lineTo(
+    x + width,
+    y + 41 * scale
+  );
+
+  ctx.closePath();
+
+  ctx.fillStyle =
+    "#131313";
+
+  ctx.fill();
+
+
+  // Red stripe
+  ctx.fillStyle =
+    "#b21f28";
+
+  ctx.fillRect(
+    x,
+    y + 29 * scale,
+    width,
+    6 * scale
+  );
+
+
+  // Window
+  ctx.fillStyle =
+    "#87d8ef";
+
+  const windowX =
+    direction === 1
+      ? x +
+        95 * scale
+      : x +
+        12 * scale;
+
+
+  ctx.fillRect(
+    windowX,
+    y + 12 * scale,
+    21 * scale,
+    12 * scale
+  );
+
+
+  // Headlight
+  ctx.fillStyle =
+    "#ffe95c";
+
+
+  if (
+    direction === 1
+  ) {
+
+    ctx.fillRect(
+      x +
+      width -
+      4 * scale,
+      y + 18 * scale,
+      5 * scale,
+      8 * scale
+    );
+
+  } else {
+
+    ctx.fillRect(
+      x,
+      y + 18 * scale,
+      5 * scale,
+      8 * scale
+    );
+  }
+}
+
+
+// ======================================================
+// TRAIN CAR
+// ======================================================
+
+function drawTrainCar(
+  worldX,
+  y,
+  worldWidth,
+  scale,
+  index
+) {
+
+  const x =
+    projectX(
+      worldX,
+      y
+    );
+
+
+  const width =
+    worldWidth *
+    scale;
+
+
+  const depth =
+    8 * scale;
+
+
+  // Main body
+  ctx.fillStyle =
+    index % 2 === 0
+      ? "#343434"
+      : "#424242";
+
+
+  ctx.fillRect(
+    x,
+    y + 8 * scale,
+    width,
+    32 * scale
+  );
+
+
+  // Top
+  ctx.beginPath();
+
+  ctx.moveTo(
+    x,
+    y + 8 * scale
+  );
+
+  ctx.lineTo(
+    x + depth,
+    y
+  );
+
+  ctx.lineTo(
+    x + width + depth,
+    y
+  );
+
+  ctx.lineTo(
+    x + width,
+    y + 8 * scale
+  );
+
+  ctx.closePath();
+
+  ctx.fillStyle =
+    "#555";
+
+  ctx.fill();
+
+
+  // Side face
+  ctx.beginPath();
+
+  ctx.moveTo(
+    x + width,
+    y + 8 * scale
+  );
+
+  ctx.lineTo(
+    x + width + depth,
+    y
+  );
+
+  ctx.lineTo(
+    x + width + depth,
+    y + 30 * scale
+  );
+
+  ctx.lineTo(
+    x + width,
+    y + 40 * scale
+  );
+
+  ctx.closePath();
+
+  ctx.fillStyle =
+    "#222";
+
+  ctx.fill();
+
+
+  // Stripe
+  ctx.fillStyle =
+    "#8e151d";
+
+  ctx.fillRect(
+    x,
+    y + 30 * scale,
+    width,
+    5 * scale
+  );
+
+
+  // Windows
+  ctx.fillStyle =
+    "#8fd8ef";
+
+
+  for (
+    let w = 13;
+    w <
+    worldWidth - 15;
+    w += 29
+  ) {
+
+    ctx.fillRect(
+      x + w * scale,
+      y + 14 * scale,
+      18 * scale,
+      10 * scale
+    );
+  }
+}
+
+
+// ======================================================
 // CAMERA
-// ========================================
+// ======================================================
 
 function updateCamera() {
 
@@ -2245,7 +2731,6 @@ function updateCamera() {
   }
 
 
-  // Emergency catch up
   if (
     playerScreenY <
     minimumVisibleY
@@ -2283,9 +2768,9 @@ function updateCamera() {
 }
 
 
-// ========================================
+// ======================================================
 // CAR COLLISION
-// ========================================
+// ======================================================
 
 function checkCarCollision() {
 
@@ -2300,15 +2785,13 @@ function checkCarCollision() {
 
 
   for (
-    let car
-    of cars
+    let car of cars
   ) {
 
     if (
       car.row !==
       player.row
     ) {
-
       continue;
     }
 
@@ -2338,9 +2821,9 @@ function checkCarCollision() {
 }
 
 
-// ========================================
+// ======================================================
 // WATER COLLISION
-// ========================================
+// ======================================================
 
 function checkWaterCollision() {
 
@@ -2349,7 +2832,6 @@ function checkWaterCollision() {
       player.row
     ) !== "water"
   ) {
-
     return;
   }
 
@@ -2359,15 +2841,13 @@ function checkWaterCollision() {
 
 
   for (
-    let boat
-    of boats
+    let boat of boats
   ) {
 
     if (
       boat.row !==
       player.row
     ) {
-
       continue;
     }
 
@@ -2394,7 +2874,6 @@ function checkWaterCollision() {
   }
 
 
-  // Fell in water
   if (
     !standingOnBoat
   ) {
@@ -2405,13 +2884,12 @@ function checkWaterCollision() {
   }
 
 
-  // Boat carries player
+  // Boat carries chicken
   player.x +=
     standingOnBoat.speed *
     standingOnBoat.direction;
 
 
-  // Boat carried chicken off screen
   if (
     player.x +
     player.width <
@@ -2426,9 +2904,9 @@ function checkWaterCollision() {
 }
 
 
-// ========================================
+// ======================================================
 // RESTART
-// ========================================
+// ======================================================
 
 function restartGame() {
 
@@ -2460,9 +2938,9 @@ function restartGame() {
 }
 
 
-// ========================================
+// ======================================================
 // GAME LOOP
-// ========================================
+// ======================================================
 
 function gameLoop() {
 
@@ -2513,9 +2991,9 @@ function gameLoop() {
 }
 
 
-// ========================================
+// ======================================================
 // CONTROLS
-// ========================================
+// ======================================================
 
 document.addEventListener(
   "keydown",
@@ -2542,7 +3020,7 @@ document.addEventListener(
     }
 
 
-    // MOVE UP
+    // UP
     if (
       event.key ===
       "ArrowUp"
@@ -2559,7 +3037,7 @@ document.addEventListener(
     }
 
 
-    // MOVE DOWN
+    // DOWN
     if (
       event.key ===
       "ArrowDown"
@@ -2569,7 +3047,7 @@ document.addEventListener(
     }
 
 
-    // MOVE LEFT
+    // LEFT
     if (
       event.key ===
       "ArrowLeft"
@@ -2580,7 +3058,7 @@ document.addEventListener(
     }
 
 
-    // MOVE RIGHT
+    // RIGHT
     if (
       event.key ===
       "ArrowRight"
@@ -2591,7 +3069,7 @@ document.addEventListener(
     }
 
 
-    // Keep player in screen unless on water
+    // Keep player inside horizontally
     if (
       rows.get(
         player.row
@@ -2622,7 +3100,7 @@ document.addEventListener(
     }
 
 
-    // Camera emergency protection
+    // Prevent player going off top
     const playerScreenY =
       getPlayerScreenY();
 
@@ -2649,8 +3127,8 @@ document.addEventListener(
 );
 
 
-// ========================================
-// START GAME
-// ========================================
+// ======================================================
+// START
+// ======================================================
 
 gameLoop();
